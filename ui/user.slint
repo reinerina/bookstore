@@ -1,0 +1,38 @@
+import { LoginView } from "login.slint";
+import { UserDetailView, UserDetail } from "user-detail.slint";
+
+export component UserView inherits Window {
+    in property <bool> error-login;
+    in property <bool> error-logout;
+    in property <string> error-login-message;
+    in property <UserDetail> user-detail;
+
+    in property <bool> has-login;
+
+    callback user-login(string, string);
+    callback user-register();
+    callback user-logout();
+
+    callback get-user-detail();
+
+    if !has-login:  LoginView {
+        error-login: root.error-login;
+        error-login-message: root.error-login-message;
+
+        user-login(username, password) => {
+            root.user-login(username, password);
+        }
+    }
+
+    if has-login: UserDetailView {
+        error-logout: root.error-logout;
+        user-detail: root.user-detail;
+
+        user-logout => {
+            root.user-logout();
+        }
+        get-user-detail => {
+            root.get-user-detail();
+        }
+    }
+}

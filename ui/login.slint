@@ -1,0 +1,88 @@
+import { VerticalBox, HorizontalBox, Button, LineEdit } from "std-widgets.slint";
+
+export component LoginView inherits Window {
+
+    property <string> username;
+    property <string> password;
+
+    in property <bool> error-login;
+    in property <bool> error-register;
+    in property <string> error-login-message;
+    callback user-login(string, string);
+    callback user-register();
+
+    width: 100%;
+    height: 100%;
+    VerticalLayout {
+        alignment: LayoutAlignment.center;
+        HorizontalBox {
+            alignment: LayoutAlignment.center;
+            username-text := Text {
+                text: "Username";
+                font-size: 15px;
+                vertical-alignment: TextVerticalAlignment.center;
+            }
+
+            username-edit := LineEdit {
+                placeholder-text: "Enter your username";
+                font-size: 15px;
+                text <=> root.username;
+            }
+        }
+
+        HorizontalBox {
+            alignment: LayoutAlignment.center;
+            Text {
+                text: "Password";
+                font-size: 15px;
+                vertical-alignment: TextVerticalAlignment.center;
+            }
+
+            password-edit := LineEdit {
+                placeholder-text: "Enter your password";
+                input-type: InputType.password;
+                font-size: 15px;
+                text <=> root.password;
+            }
+        }
+
+        VerticalLayout {
+            alignment: LayoutAlignment.center;
+
+            HorizontalLayout {
+                alignment: LayoutAlignment.center;
+                Text {
+                    text: root.error-login-message;
+                    visible: root.error-login;
+                }
+            }
+
+            HorizontalLayout {
+                alignment: LayoutAlignment.center;
+                VerticalLayout {
+                    alignment: LayoutAlignment.center;
+                    Button {
+                        text: "Login";
+                        clicked => {
+                            root.user-login(root.username, root.password);
+                        }
+                    }
+
+                    HorizontalBox {
+                        alignment: LayoutAlignment.center;
+                        Text {
+                            text: "Or";
+                        }
+                    }
+
+                    Button {
+                        text: "Sign Up";
+                        clicked => {
+                            root.user-register();
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

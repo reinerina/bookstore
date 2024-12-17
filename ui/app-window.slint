@@ -1,0 +1,165 @@
+import { Button, VerticalBox, HorizontalBox, ListView, TabWidget, StandardButton } from "std-widgets.slint";
+import { SideBar } from "side-bar.slint";
+import { UserView } from "user.slint";
+import { UserDetail } from "user-detail.slint";
+import { BookListView, Book } from "book-list.slint";
+import { BookCartView, BookInCart } from "book-cart.slint";
+
+export component MainWindow inherits Window {
+
+    in property <bool> error-login;
+    in property <bool> error-logout;
+    in property <string> error-login-message;
+
+    in property <UserDetail> user-detail;
+    in property <bool> has-login;
+
+    in property <[Book]> books;
+    in property <[BookInCart]> books-in-cart;
+
+    out property <int> selected-book-id: -1;
+
+    callback user-login(string, string);
+    callback user-register();
+    callback user-logout();
+    callback add-to-cart(int, int);
+    callback get-cart-book-list();
+    callback update-cart-book(int, int, [BookInCart]);
+    callback remove-cart-book(int, [BookInCart]);
+    callback checkout();
+
+    callback get-book-list();
+
+    callback get-user-detail();
+
+    title: "Bookstore User App";
+    preferred-width: 800px;
+    preferred-height: 600px;
+    min-width: 800px;
+    min-height: 600px;
+    HorizontalLayout {
+        side-bar := SideBar {
+            title: @tr("Bookstore User App");
+            model: [
+                @tr("Menu" => "User"),
+                @tr("Menu" => "Book"),
+                @tr("Menu" => "Cart"),
+                @tr("Menu" => "TextEdit"),
+                @tr("Menu" => "Easings"),
+                @tr("Menu" => "About")
+            ];
+        }
+
+        VerticalLayout {
+            alignment: LayoutAlignment.start;
+            VerticalLayout {
+                alignment: LayoutAlignment.start;
+                padding-top: 8px;
+                padding-left: 8px;
+                HorizontalLayout {
+                    alignment: LayoutAlignment.start;
+                    Button {
+                        text: side-bar.collapsed ? ">" : "<";
+                        clicked => {
+                            side-bar.collapsed = !side-bar.collapsed;
+                        }
+                    }
+                }
+            }
+
+            VerticalBox {
+                alignment: LayoutAlignment.center;
+                if (side-bar.current-item == 0):user-view := UserView {
+                    preferred-width: 420px;
+                    error-login: root.error-login;
+                    error-logout: root.error-logout;
+                    has-login: root.has-login;
+
+                    error-login-message: root.error-login-message;
+
+                    user-detail: root.user-detail;
+
+                    user-login(username, password) => {
+                        root.user-login(username, password);
+                    }
+                    user-register => {
+                        root.user-register();
+                    }
+                    user-logout => {
+                        root.user-logout();
+                    }
+                    get-user-detail => {
+                        root.get-user-detail();
+                    }
+                }
+
+                if (side-bar.current-item == 1):book-list-view := BookListView {
+                    preferred-width: 420px;
+
+                    init => {
+                        root.get-book-list();
+                    }
+
+                    books: root.books;
+                    has-login: root.has-login;
+                    image-width: 150px;
+                    image-aspect-ratio: 1;
+                    item-width: root.width - side-bar.width - 50px;
+
+                    changed selected-book-id => {
+                        root.selected-book-id = self.selected-book-id;
+                    }
+
+                    add-to-cart(id, quantity) => {
+                        root.add-to-cart(id, quantity);
+                    }
+                }
+
+                if (side-bar.current-item == 2):book-cart-view := BookCartView {
+                    preferred-width: 420px;
+
+                    init => {
+                        root.get-cart-book-list();
+                    }
+
+                    books: root.books-in-cart;
+                    image-width: 150px;
+                    image-aspect-ratio: 1;
+                    item-width: root.width - side-bar.width - 50px;
+
+                    update-cart-book(id, quantity) => {
+                        root.update-cart-book(id, quantity, root.books-in-cart);
+                    }
+
+                    remove-cart-book(id) => {
+                        root.remove-cart-book(id, root.books-in-cart);
+                    }
+
+                    checkout => {
+                        root.checkout();
+                    }
+                }
+            }
+        }
+    }
+}
+
+export component ErrorDialog inherits Dialog {
+    in property <string> dialog-title;
+    in property <string> dialog-message;
+
+    title: dialog-title;
+    preferred-width: 400px;
+    preferred-height: 200px;
+    VerticalBox {
+        alignment: LayoutAlignment.center;
+        Text {
+            text: dialog-message;
+        }
+    }
+
+    StandardButton {
+        kind: StandardButtonKind.ok;
+        dialog-button-role: DialogButtonRole.accept;
+    }
+}
