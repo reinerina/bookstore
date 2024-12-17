@@ -4,6 +4,7 @@ import { UserView } from "user.slint";
 import { UserDetail } from "user-detail.slint";
 import { BookListView, Book } from "book-list.slint";
 import { BookCartView, BookInCart } from "book-cart.slint";
+import { OrderHistoryView, OrderHistory } from "order-history.slint";
 
 export component MainWindow inherits Window {
 
@@ -17,6 +18,8 @@ export component MainWindow inherits Window {
     in property <[Book]> books;
     in property <[BookInCart]> books-in-cart;
 
+    in property <[OrderHistory]> orders;
+
     out property <int> selected-book-id: -1;
 
     callback user-login(string, string);
@@ -27,6 +30,7 @@ export component MainWindow inherits Window {
     callback update-cart-book(int, int, [BookInCart]);
     callback remove-cart-book(int, [BookInCart]);
     callback checkout();
+    callback get-order-history-list();
 
     callback get-book-list();
 
@@ -44,7 +48,7 @@ export component MainWindow inherits Window {
                 @tr("Menu" => "User"),
                 @tr("Menu" => "Book"),
                 @tr("Menu" => "Cart"),
-                @tr("Menu" => "TextEdit"),
+                @tr("Menu" => "Order History"),
                 @tr("Menu" => "Easings"),
                 @tr("Menu" => "About")
             ];
@@ -70,7 +74,6 @@ export component MainWindow inherits Window {
             VerticalBox {
                 alignment: LayoutAlignment.center;
                 if (side-bar.current-item == 0):user-view := UserView {
-                    preferred-width: 420px;
                     error-login: root.error-login;
                     error-logout: root.error-logout;
                     has-login: root.has-login;
@@ -94,7 +97,6 @@ export component MainWindow inherits Window {
                 }
 
                 if (side-bar.current-item == 1):book-list-view := BookListView {
-                    preferred-width: 420px;
 
                     init => {
                         root.get-book-list();
@@ -116,7 +118,6 @@ export component MainWindow inherits Window {
                 }
 
                 if (side-bar.current-item == 2):book-cart-view := BookCartView {
-                    preferred-width: 420px;
 
                     init => {
                         root.get-cart-book-list();
@@ -140,6 +141,18 @@ export component MainWindow inherits Window {
                     checkout => {
                         root.checkout();
                     }
+                }
+
+                if (side-bar.current-item == 3):order-history-view := OrderHistoryView {
+
+                    init => {
+                        root.get-order-history-list();
+                    }
+
+                    orders: root.orders;
+                    window-width: root.width - side-bar.width - 50px;
+                    window-height: root.height;
+                    item-width: root.width - side-bar.width - 50px;
                 }
             }
         }

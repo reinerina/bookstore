@@ -118,3 +118,20 @@ pub struct BookDetailResponse {
 pub struct OrderCreateResponse {
     pub order_id: u32,
 }
+
+#[derive(Debug, Deserialize)]
+pub struct OrderHistoryItemResponse {
+    pub order_id: u32,
+    pub discount_percentage: String,
+    pub discount_amount: String,
+    pub original_price: String,
+    pub total_price: String,
+    pub order_date: String,
+    pub payment_status: String,
+    pub shipping_status: String,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct OrderHistoryResponse {
+    pub orders: Vec<OrderHistoryItemResponse>,
+}

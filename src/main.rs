@@ -3,7 +3,8 @@ use bookstore_user::global::Token;
 use bookstore_user::network::{
     url_get_image_buffer, url_post, BookDetailRequest, BookDetailResponse, BookListRequest,
     BookListResponse, LoginRequest, LoginResponse, LogoutRequest, LogoutResponse,
-    OrderCreateRequest, OrderCreateResponse, UserDetailRequest, UserDetailResponse,
+    OrderCreateRequest, OrderCreateResponse, OrderHistoryItemResponse, OrderHistoryRequest,
+    OrderHistoryResponse, UserDetailRequest, UserDetailResponse,
 };
 use rust_decimal::Decimal;
 use slint::{Image, Model, ModelRc, VecModel};
@@ -504,6 +505,85 @@ fn main() -> Result<(), slint::PlatformError> {
                         log::info!("user order {} create", order_id);
                         let main_window = main_window_weak.unwrap();
                         main_window.set_books_in_cart(ModelRc::new(VecModel::from(Vec::new())));
+                    }
+                    Err(e) => {
+                        log::error!("{}", e.to_string());
+                    }
+                }
+            })
+            .unwrap();
+        }
+    });
+
+    main_window.on_get_order_history_list({
+        let rt_clone = rt.clone();
+        let main_window_weak = main_window.as_weak();
+        move || {
+            let rt_clone = rt_clone.clone();
+            let main_window_weak = main_window_weak.clone();
+            slint::spawn_local(async move {
+                match rt_clone
+                    .spawn(async move {
+                        match global::get_user_token().await {
+                            Ok(token) => {
+                                let order_history_request = match token.read().await.as_ref() {
+                                    Some(token) => OrderHistoryRequest {
+                                        token: token.token.clone(),
+                                        tag: token.tag.clone(),
+                                        nonce: token.nonce.clone(),
+                                    },
+                                    None => OrderHistoryRequest {
+                                        token: "".into(),
+                                        tag: "".into(),
+                                        nonce: "".into(),
+                                    },
+                                };
+                                match url_post::<OrderHistoryResponse, OrderHistoryRequest>(
+                                    "/order/history",
+                                    order_history_request,
+                                )
+                                .await
+                                {
+                                    Ok(order_history_response) => Ok(order_history_response),
+                                    Err(e) => Err(e),
+                                }
+                            }
+                            Err(e) => Err(e),
+                        }
+                    })
+                    .await
+                    .unwrap()
+                {
+                    Ok(order_history) => {
+                        let orders = order_history
+                            .orders
+                            .into_iter()
+                            .map(
+                                |OrderHistoryItemResponse {
+                                     order_id,
+                                     discount_percentage,
+                                     discount_amount,
+                                     original_price,
+                                     total_price,
+                                     order_date,
+                                     payment_status,
+                                     shipping_status,
+                                 }| {
+                                    OrderHistory {
+                                        id: order_id as i32,
+                                        discount_percentage: discount_percentage.into(),
+                                        discount_amount: discount_amount.into(),
+                                        original_price: original_price.into(),
+                                        total_price: total_price.into(),
+                                        order_date: order_date.into(),
+                                        payment_status: payment_status.into(),
+                                        shipping_status: shipping_status.into(),
+                                    }
+                                },
+                            )
+                            .collect::<Vec<_>>();
+                        let main_window = main_window_weak.unwrap();
+                        main_window.set_orders(ModelRc::new(VecModel::from(orders)));
                     }
                     Err(e) => {
                         log::error!("{}", e.to_string());

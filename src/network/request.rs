@@ -33,3 +33,10 @@ pub struct OrderCreateRequest {
     pub nonce: String,
     pub items: Vec<(u32, u32)>,
 }
+
+#[derive(Serialize, Debug, Default)]
+pub struct OrderHistoryRequest {
+    pub token: String,
+    pub tag: String,
+    pub nonce: String,
+}
