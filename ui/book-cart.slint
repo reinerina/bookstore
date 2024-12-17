@@ -1,4 +1,4 @@
-import { VerticalBox, SpinBox, Button } from "std-widgets.slint";
+import { VerticalBox, SpinBox, Button, ListView } from "std-widgets.slint";
 export struct BookInCart {
     id: int,
     isbn: string,
@@ -16,6 +16,8 @@ component BookInCartItem inherits Rectangle {
     in property <length> image-width;
     in property <float> image-aspect-ratio;
     in property <length> item-width;
+
+    width: root.item-width;
 
     callback clicked <=> touch.clicked;
     callback update-cart-book(int, int);
@@ -122,34 +124,46 @@ component BookInCartItem inherits Rectangle {
     }
 }
 
-export component BookCartView inherits Rectangle {
+export component BookCartView inherits Window {
     in property <[BookInCart]> books;
-    in property <length> image-width;
-    in property <float> image-aspect-ratio;
-    in property <length> item-width;
+    in property <length> image-width: 100px;
+    in property <float> image-aspect-ratio: 1.5;
+    in property <length> item-width: 300px;
+    in property <length> window-width: 800px;
+    in property <length> window-height: 600px;
 
     callback update-cart-book(int, int);
     callback remove-cart-book(int);
     callback checkout();
 
     VerticalBox {
-        for book[index] in root.books: BookInCartItem {
-            book: book;
-            image-width: root.image-width;
-            image-aspect-ratio: root.image-aspect-ratio;
-            item-width: root.item-width;
+        alignment: LayoutAlignment.start;
+        ListView {
+            preferred-height: root.window-height;
 
-            update-cart-book(id, quantity) => {
-                root.update-cart-book(id, quantity);
-            }
+            for book[index] in root.books: VerticalLayout {
+                BookInCartItem {
+                    book: book;
+                    image-width: root.image-width;
+                    image-aspect-ratio: root.image-aspect-ratio;
+                    item-width: root.item-width;
 
-            remove-cart-book(id) => {
-                root.remove-cart-book(id);
+                    update-cart-book(id, quantity) => {
+                        root.update-cart-book(id, quantity);
+                    }
+
+                    remove-cart-book(id) => {
+                        root.remove-cart-book(id);
+                    }
+                }
             }
         }
+
         HorizontalLayout {
             alignment: LayoutAlignment.end;
-            Button {
+            padding-top: 8px;
+            padding-bottom: 8px;
+            checkout-button := Button {
                 text: "Checkout";
                 clicked => {
                     root.checkout();

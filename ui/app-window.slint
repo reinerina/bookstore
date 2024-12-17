@@ -126,6 +126,8 @@ export component MainWindow inherits Window {
                     image-width: 150px;
                     image-aspect-ratio: 1;
                     item-width: root.width - side-bar.width - 50px;
+                    window-height: root.height;
+                    window-width: root.width;
 
                     update-cart-book(id, quantity) => {
                         root.update-cart-book(id, quantity, root.books-in-cart);

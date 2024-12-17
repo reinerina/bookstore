@@ -128,28 +128,29 @@ export component BookListView inherits Window {
     in property <length> image-width: 100px;
     in property <float> image-aspect-ratio: 1.5;
     in property <length> item-width: 300px;
+    in property <length> window-width: 800px;
+    in property <length> window-height: 600px;
 
     callback add-to-cart(int, int);
 
     out property <int> selected-book-id: -1;
-    VerticalLayout {
-        HorizontalLayout {
-            alignment: LayoutAlignment.center;
-            VerticalBox {
-                for book[index] in books: BookListItem {
-                    book: books[index];
-                    has-login: root.has-login;
-                    image-width: root.image-width;
-                    image-aspect-ratio: root.image-aspect-ratio;
-                    item-width: root.item-width;
+    VerticalBox {
+        alignment: LayoutAlignment.start;
+        ListView {
+            preferred-height: root.window-height;
+            for book[index] in books: BookListItem {
+                book: books[index];
+                has-login: root.has-login;
+                image-width: root.image-width;
+                image-aspect-ratio: root.image-aspect-ratio;
+                item-width: root.item-width;
 
-                    clicked => {
-                        root.selected-book-id = books[index].id;
-                    }
+                clicked => {
+                    root.selected-book-id = books[index].id;
+                }
 
-                    add-to-cart(id, quantity) => {
-                        root.add-to-cart(id, quantity);
-                    }
+                add-to-cart(id, quantity) => {
+                    root.add-to-cart(id, quantity);
                 }
             }
         }

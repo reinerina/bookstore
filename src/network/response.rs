@@ -113,3 +113,8 @@ pub struct BookDetailResponse {
     pub cover: String,
     pub is_onstore: bool,
 }
+
+#[derive(Debug, Deserialize)]
+pub struct OrderCreateResponse {
+    pub order_id: u32,
+}

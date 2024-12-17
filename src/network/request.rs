@@ -25,3 +25,11 @@ pub struct BookListRequest;
 
 #[derive(Serialize, Debug, Default)]
 pub struct BookDetailRequest;
+
+#[derive(Serialize, Debug, Default)]
+pub struct OrderCreateRequest {
+    pub token: String,
+    pub tag: String,
+    pub nonce: String,
+    pub items: Vec<(u32, u32)>,
+}

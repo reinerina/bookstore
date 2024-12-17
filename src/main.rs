@@ -3,7 +3,7 @@ use bookstore_user::global::Token;
 use bookstore_user::network::{
     url_get_image_buffer, url_post, BookDetailRequest, BookDetailResponse, BookListRequest,
     BookListResponse, LoginRequest, LoginResponse, LogoutRequest, LogoutResponse,
-    UserDetailRequest, UserDetailResponse,
+    OrderCreateRequest, OrderCreateResponse, UserDetailRequest, UserDetailResponse,
 };
 use rust_decimal::Decimal;
 use slint::{Image, Model, ModelRc, VecModel};
@@ -448,6 +448,62 @@ fn main() -> Result<(), slint::PlatformError> {
                             .collect::<Vec<_>>();
                         let main_window = main_window_weak.unwrap();
                         main_window.set_books_in_cart(ModelRc::new(VecModel::from(books_in_cart)));
+                    }
+                    Err(e) => {
+                        log::error!("{}", e.to_string());
+                    }
+                }
+            })
+            .unwrap();
+        }
+    });
+
+    main_window.on_checkout({
+        let rt_clone = rt.clone();
+        let main_window_weak = main_window.as_weak();
+        move || {
+            let rt_clone = rt_clone.clone();
+            let main_window_weak = main_window_weak.clone();
+            slint::spawn_local(async move {
+                match rt_clone
+                    .spawn(async move {
+                        match global::get_user_token().await {
+                            Ok(token) => {
+                                let order_create_request = match token.read().await.as_ref() {
+                                    Some(token) => match global::get_cart_items().await {
+                                        Ok(order_items) => OrderCreateRequest {
+                                            token: token.token.clone(),
+                                            tag: token.tag.clone(),
+                                            nonce: token.nonce.clone(),
+                                            items: order_items,
+                                        },
+                                        Err(e) => anyhow::bail!(e),
+                                    },
+                                    None => OrderCreateRequest::default(),
+                                };
+                                match url_post::<OrderCreateResponse, OrderCreateRequest>(
+                                    "/order/create",
+                                    order_create_request,
+                                )
+                                .await
+                                {
+                                    Ok(order_response) => {
+                                        global::clear_shopping_cart().await?;
+                                        Ok(order_response.order_id)
+                                    }
+                                    Err(e) => Err(e),
+                                }
+                            }
+                            Err(e) => Err(e),
+                        }
+                    })
+                    .await
+                    .unwrap()
+                {
+                    Ok(order_id) => {
+                        log::info!("user order {} create", order_id);
+                        let main_window = main_window_weak.unwrap();
+                        main_window.set_books_in_cart(ModelRc::new(VecModel::from(Vec::new())));
                     }
                     Err(e) => {
                         log::error!("{}", e.to_string());
