@@ -594,6 +594,83 @@ fn main() -> Result<(), slint::PlatformError> {
         }
     });
 
+    main_window.on_open_book_detail({
+        let rt_clone = rt.clone();
+        move |book_id| {
+            let rt_clone = rt_clone.clone();
+            slint::spawn_local(async move {
+                match rt_clone
+                    .spawn(async move {
+                        match url_post::<BookDetailResponse, BookDetailRequest>(
+                            &format!("book/{}/detail", book_id),
+                            BookDetailRequest::default(),
+                        )
+                        .await
+                        {
+                            Ok(book_detail) => {
+                                let cover = url_get_image_buffer(&book_detail.cover).await.ok();
+                                Ok((book_detail, cover))
+                            }
+                            Err(e) => Err(e),
+                        }
+                    })
+                    .await
+                    .unwrap()
+                {
+                    Ok((book_detail, cover)) => {
+                        let book = BookDetail {
+                            id: book_detail.book_id as i32,
+                            title: book_detail.title.into(),
+                            isbn: book_detail.isbn.into(),
+                            authors: ModelRc::new(VecModel::from(
+                                book_detail
+                                    .authors
+                                    .into_iter()
+                                    .map(|author| author.name.into())
+                                    .collect::<Vec<_>>(),
+                            )),
+                            publisher: book_detail.publisher.name.into(),
+                            series: ModelRc::new(VecModel::from(
+                                book_detail
+                                    .in_series
+                                    .into_iter()
+                                    .map(|series| series.name.into())
+                                    .collect::<Vec<_>>(),
+                            )),
+                            price: book_detail.price.into(),
+                            keywords: ModelRc::new(VecModel::from(
+                                book_detail
+                                    .keywords
+                                    .into_iter()
+                                    .map(|keyword| keyword.into())
+                                    .collect::<Vec<_>>(),
+                            )),
+                            catalog: book_detail.catalog.into(),
+                            cover: match cover {
+                                Some(buffer) => Image::from_rgba8(buffer),
+                                None => Image::default(),
+                            },
+                            suppliers: ModelRc::new(VecModel::from(
+                                book_detail
+                                    .suppliers
+                                    .into_iter()
+                                    .map(|supplier| supplier.name.into())
+                                    .collect::<Vec<_>>(),
+                            )),
+                        };
+                        let book_detail_window = BookDetailWindow::new().unwrap();
+                        book_detail_window.set_book(book);
+                        book_detail_window.show().unwrap();
+                    }
+                    Err(e) => {
+                        log::error!("{}", e.to_string());
+                    }
+                }
+            })
+            .unwrap();
+        }
+    });
+
     main_window.show()?;
 
     slint::run_event_loop()?;

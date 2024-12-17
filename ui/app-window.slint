@@ -5,6 +5,7 @@ import { UserDetail } from "user-detail.slint";
 import { BookListView, Book } from "book-list.slint";
 import { BookCartView, BookInCart } from "book-cart.slint";
 import { OrderHistoryView, OrderHistory } from "order-history.slint";
+import { BookDetailView, BookDetail } from "book-detail.slint";
 
 export component MainWindow inherits Window {
 
@@ -31,6 +32,7 @@ export component MainWindow inherits Window {
     callback remove-cart-book(int, [BookInCart]);
     callback checkout();
     callback get-order-history-list();
+    callback open-book-detail(int);
 
     callback get-book-list();
 
@@ -115,6 +117,10 @@ export component MainWindow inherits Window {
                     add-to-cart(id, quantity) => {
                         root.add-to-cart(id, quantity);
                     }
+
+                    open-book-detail(id) => {
+                        root.open-book-detail(id);
+                    }
                 }
 
                 if (side-bar.current-item == 2):book-cart-view := BookCartView {
@@ -156,6 +162,30 @@ export component MainWindow inherits Window {
                 }
             }
         }
+    }
+}
+
+export component BookDetailWindow inherits Window {
+    in property <BookDetail> book;
+    in property <length> image-width: 100px;
+    in property <float> image-aspect-ratio: 1;
+    in property <length> item-width: 600px;
+    in property <length> window-width: 600px;
+    in property <length> window-height: 238px;
+
+    title: "Book \{book.title} Detail";
+    preferred-width: root.window-width;
+    preferred-height: root.window-height;
+
+    min-width: root.window-width;
+    min-height: root.window-height;
+
+    book-detail := BookDetailView {
+        book: book;
+        image-width: root.image-width;
+        image-aspect-ratio: root.image-aspect-ratio;
+        item-width: root.window-width - 50px;
+        preferred-height: root.window-height;
     }
 }
 

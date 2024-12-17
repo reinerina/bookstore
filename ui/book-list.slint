@@ -133,6 +133,7 @@ export component BookListView inherits Window {
     in property <length> window-height: 600px;
 
     callback add-to-cart(int, int);
+    callback open-book-detail(int);
 
     out property <int> selected-book-id: -1;
     VerticalBox {
@@ -147,7 +148,7 @@ export component BookListView inherits Window {
                 item-width: root.item-width;
 
                 clicked => {
-                    root.selected-book-id = books[index].id;
+                    root.open-book-detail(book.id);
                 }
 
                 add-to-cart(id, quantity) => {

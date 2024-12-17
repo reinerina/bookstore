@@ -48,34 +48,34 @@ component OrderHistoryItem inherits Rectangle {
                 HorizontalLayout {
                     alignment: LayoutAlignment.start;
                     Text {
-                        text: root.order.order_date;
+                        text: "Order Date: " + root.order.order_date;
                     }
 
                     Text {
-                        text: root.order.total_price;
+                        text: "Total Price: " + root.order.total_price;
                     }
 
                     Text {
-                        text: root.order.payment_status;
+                        text: "Payment Status: " + root.order.payment_status;
                     }
 
                     Text {
-                        text: root.order.shipping_status;
+                        text: "Shipping Status: " + root.order.shipping_status;
                     }
                 }
 
                 HorizontalLayout {
                     alignment: LayoutAlignment.start;
                     Text {
-                        text: root.order.discount_percentage;
+                        text: "Discount Percentage: " + root.order.discount_percentage;
                     }
 
                     Text {
-                        text: root.order.discount_amount;
+                        text: "Discount Amount: " + root.order.discount_amount;
                     }
 
                     Text {
-                        text: root.order.original_price;
+                        text: "Original Price: " + root.order.original_price;
                     }
                 }
             }
@@ -119,10 +119,10 @@ component OrderHistoryItem inherits Rectangle {
 }
 
 export component OrderHistoryView inherits Window {
-    in property <length> item-width;
+    in property <length> item-width: 300px;
     in property <[OrderHistory]> orders;
-    in property <length> window-width;
-    in property <length> window-height;
+    in property <length> window-width: 800px;
+    in property <length> window-height: 600px;
 
     VerticalBox {
         alignment: LayoutAlignment.start;
