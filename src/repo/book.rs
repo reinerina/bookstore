@@ -8,11 +8,11 @@ pub struct BookRepo;
 impl BookRepo {
     pub async fn get_book_detail(conn: &mut Conn, book_id: u32) -> anyhow::Result<Option<Book>> {
         let query = r"SELECT
-	books.book_id,
+	DISTINCT books.book_id,
 	books.isbn,
 	books.title,
 	GROUP_CONCAT( DISTINCT CONCAT( `authors`.author_id, ',', `authors`.`name` ) ORDER BY book_authors.`order` ASC SEPARATOR ';' ),
-GROUP_CONCAT( DISTINCT keywords.keyword SEPARATOR ';' ),
+GROUP_CONCAT( DISTINCT CONCAT( keywords.keyword_id, ',', keywords.keyword ) SEPARATOR ';' ),
 GROUP_CONCAT( DISTINCT CONCAT( publishers.publisher_id, ',', publishers.`name` ) SEPARATOR ';' ),
 	GROUP_CONCAT(
 		DISTINCT CONCAT(
@@ -91,7 +91,16 @@ GROUP BY books.book_id;";
                     keywords: {
                         let keywords: Option<String> = keywords;
                         match keywords {
-                            Some(keywords) => keywords.split(';').map(|s| s.to_string()).collect(),
+                            Some(keywords) => keywords
+                                .split(';')
+                                .map(|s| {
+                                    let mut iter = s.split(',');
+                                    Keyword {
+                                        id: iter.next().unwrap().parse().unwrap(),
+                                        keyword: iter.next().unwrap().to_string(),
+                                    }
+                                })
+                                .collect(),
                             None => Vec::new(),
                         }
                     },
@@ -182,7 +191,7 @@ GROUP BY books.book_id;";
 	books.isbn,
 	books.title,
 	GROUP_CONCAT( DISTINCT CONCAT( `authors`.author_id, ',', `authors`.`name` ) ORDER BY book_authors.`order` ASC SEPARATOR ';' ),
-GROUP_CONCAT( DISTINCT keywords.keyword SEPARATOR ';' ),
+GROUP_CONCAT( DISTINCT CONCAT( keywords.keyword_id, ',', keywords.keyword ) SEPARATOR ';' ),
 GROUP_CONCAT( DISTINCT CONCAT( publishers.publisher_id, ',', publishers.`name` ) SEPARATOR ';' ),
 	GROUP_CONCAT(
 		DISTINCT CONCAT(
@@ -256,7 +265,16 @@ GROUP BY books.book_id;";
                     keywords: {
                         let keywords: Option<String> = keywords;
                         match keywords {
-                            Some(keywords) => keywords.split(';').map(|s| s.to_string()).collect(),
+                            Some(keywords) => keywords
+                                .split(';')
+                                .map(|s| {
+                                    let mut iter = s.split(',');
+                                    Keyword {
+                                        id: iter.next().unwrap().parse().unwrap(),
+                                        keyword: iter.next().unwrap().to_string(),
+                                    }
+                                })
+                                .collect(),
                             None => Vec::new(),
                         }
                     },
@@ -321,6 +339,348 @@ GROUP BY books.book_id;";
                 },
             )
             .await?;
+        Ok(result)
+    }
+
+    pub async fn search_by_title_natural(
+        conn: &mut Conn,
+        title: &str,
+    ) -> anyhow::Result<Vec<Book>> {
+        let query = r"SELECT
+	books.book_id,
+	books.isbn,
+	books.title,
+	GROUP_CONCAT( DISTINCT CONCAT( `authors`.author_id, ',', `authors`.`name` ) ORDER BY book_authors.`order` ASC SEPARATOR ';' ),
+GROUP_CONCAT( DISTINCT CONCAT( keywords.keyword_id, ',', keywords.keyword ) SEPARATOR ';' ),
+GROUP_CONCAT( DISTINCT CONCAT( publishers.publisher_id, ',', publishers.`name` ) SEPARATOR ';' ),
+	GROUP_CONCAT(
+		DISTINCT CONCAT(
+			suppliers.supplier_id,
+			',',
+			suppliers.`name`,
+			',',
+			suppliers.telephone,
+			',',
+			suppliers.email,
+			',',
+			suppliers.address,
+			',',
+			suppliers.fax
+		) SEPARATOR ';'
+),
+GROUP_CONCAT( DISTINCT CONCAT( series.series_id, ',', series.series_title, ',', series_books.column_num ) SEPARATOR ';' ) AS series,
+books.price,
+books.catalog,
+books.cover,
+books.is_onstore
+FROM
+	books
+	LEFT JOIN publishers ON publishers.publisher_id = books.book_id
+	LEFT JOIN book_authors ON book_authors.book_id = books.book_id
+	LEFT JOIN `authors` ON `authors`.author_id = book_authors.author_id
+	LEFT JOIN book_suppliers ON book_suppliers.book_id = books.book_id
+	LEFT JOIN suppliers ON book_suppliers.supplier_id = suppliers.supplier_id
+	LEFT JOIN book_keywords ON book_keywords.book_id = books.book_id
+	LEFT JOIN keywords ON keywords.keyword_id = keywords.keyword_id
+	LEFT JOIN series_books ON series_books.book_id = books.book_id
+	LEFT JOIN series ON series_books.series_id = series.series_id
+WHERE
+	MATCH ( books.title ) AGAINST ( :title IN NATURAL LANGUAGE MODE )
+GROUP BY
+	books.book_id
+ORDER BY
+	MATCH ( books.title ) AGAINST ( :title IN NATURAL LANGUAGE MODE ) DESC;";
+        let params = params! {
+            "title" => title,
+        };
+        let result = query
+            .with(params)
+            .map(
+                conn,
+                |(
+                    book_id,
+                    isbn,
+                    title,
+                    authors,
+                    keywords,
+                    publisher,
+                    suppliers,
+                    series,
+                    price,
+                    catalog,
+                    cover,
+                    is_onstore,
+                )| {
+                    Book {
+                        id: book_id,
+                        isbn,
+                        title,
+                        authors: {
+                            let authors: Option<String> = authors;
+                            match authors {
+                                Some(authors) => authors
+                                    .split(';')
+                                    .map(|s| {
+                                        let mut iter = s.split(',');
+                                        Author {
+                                            id: iter.next().unwrap().parse().unwrap(),
+                                            name: iter.next().unwrap().to_string(),
+                                        }
+                                    })
+                                    .collect(),
+                                None => Vec::new(),
+                            }
+                        },
+                        keywords: {
+                            let keywords: Option<String> = keywords;
+                            match keywords {
+                                Some(keywords) => keywords
+                                    .split(';')
+                                    .map(|s| {
+                                        let mut iter = s.split(',');
+                                        Keyword {
+                                            id: iter.next().unwrap().parse().unwrap(),
+                                            keyword: iter.next().unwrap().to_string(),
+                                        }
+                                    })
+                                    .collect(),
+                                None => Vec::new(),
+                            }
+                        },
+                        publisher: {
+                            let publisher: Option<String> = publisher;
+                            match publisher {
+                                Some(publisher) => {
+                                    let mut iter = publisher.split(',');
+                                    Publisher {
+                                        id: iter.next().unwrap().parse().unwrap(),
+                                        name: iter.next().unwrap().to_string(),
+                                    }
+                                }
+                                None => Publisher {
+                                    id: 0,
+                                    name: "".to_string(),
+                                },
+                            }
+                        },
+                        suppliers: {
+                            let suppliers: Option<String> = suppliers;
+                            match suppliers {
+                                Some(suppliers) => suppliers
+                                    .split(';')
+                                    .map(|s| {
+                                        let mut iter = s.split(',');
+                                        Supplier {
+                                            id: iter.next().unwrap().parse().unwrap(),
+                                            name: iter.next().unwrap().to_string(),
+                                            telephone: iter.next().unwrap().to_string(),
+                                            email: iter.next().unwrap().to_string(),
+                                            address: iter.next().unwrap().to_string(),
+                                            fax: iter.next().unwrap().to_string(),
+                                        }
+                                    })
+                                    .collect(),
+                                None => Vec::new(),
+                            }
+                        },
+                        in_series: {
+                            let series: Option<String> = series;
+
+                            match series {
+                                Some(series) => series
+                                    .split(';')
+                                    .map(|s| {
+                                        let mut iter = s.split(',');
+                                        BookInSeries {
+                                            series_id: iter.next().unwrap().parse().unwrap(),
+                                            title: iter.next().unwrap().to_string(),
+                                            column: iter.next().unwrap().parse().unwrap(),
+                                        }
+                                    })
+                                    .collect(),
+                                None => Vec::new(),
+                            }
+                        },
+                        price,
+                        catalog,
+                        cover,
+                        is_onstore,
+                    }
+                },
+            )
+            .await?;
+
+        Ok(result)
+    }
+
+    pub async fn search_by_keyword_natural(
+        conn: &mut Conn,
+        keywords: &str,
+    ) -> anyhow::Result<Vec<Book>> {
+        let query = r"SELECT
+	books.book_id,
+	books.isbn,
+	books.title,
+	GROUP_CONCAT( DISTINCT CONCAT( `authors`.author_id, ',', `authors`.`name` ) ORDER BY book_authors.`order` ASC SEPARATOR ';' ),
+GROUP_CONCAT( DISTINCT CONCAT( keywords.keyword_id, ',', keywords.keyword ) SEPARATOR ';' ),
+GROUP_CONCAT( DISTINCT CONCAT( publishers.publisher_id, ',', publishers.`name` ) SEPARATOR ';' ),
+GROUP_CONCAT(
+	DISTINCT CONCAT(
+		suppliers.supplier_id,
+		',',
+		suppliers.`name`,
+		',',
+		suppliers.telephone,
+		',',
+		suppliers.email,
+		',',
+		suppliers.address,
+		',',
+		suppliers.fax
+	) SEPARATOR ';'
+),
+GROUP_CONCAT( DISTINCT CONCAT( series.series_id, ',', series.series_title, ',', series_books.column_num ) SEPARATOR ';' ) AS series,
+books.price,
+books.catalog,
+books.cover,
+books.is_onstore
+FROM
+	books
+	LEFT JOIN publishers ON publishers.publisher_id = books.book_id
+	LEFT JOIN book_authors ON book_authors.book_id = books.book_id
+	LEFT JOIN `authors` ON `authors`.author_id = book_authors.author_id
+	LEFT JOIN book_suppliers ON book_suppliers.book_id = books.book_id
+	LEFT JOIN suppliers ON book_suppliers.supplier_id = suppliers.supplier_id
+	LEFT JOIN book_keywords ON book_keywords.book_id = books.book_id
+	LEFT JOIN keywords ON keywords.keyword_id = keywords.keyword_id
+	LEFT JOIN series_books ON series_books.book_id = books.book_id
+	LEFT JOIN series ON series_books.series_id = series.series_id
+WHERE
+	MATCH ( keywords.keyword ) AGAINST ( :keywords IN NATURAL LANGUAGE MODE )
+GROUP BY
+	books.book_id
+ORDER BY
+	SUM( MATCH ( keywords.keyword ) AGAINST ( :keywords IN NATURAL LANGUAGE MODE ) ) DESC;";
+        let params = params! {
+            "keywords" => keywords,
+        };
+        let result = query
+            .with(params)
+            .map(
+                conn,
+                |(
+                    book_id,
+                    isbn,
+                    title,
+                    authors,
+                    keywords,
+                    publisher,
+                    suppliers,
+                    series,
+                    price,
+                    catalog,
+                    cover,
+                    is_onstore,
+                )| {
+                    Book {
+                        id: book_id,
+                        isbn,
+                        title,
+                        authors: {
+                            let authors: Option<String> = authors;
+                            match authors {
+                                Some(authors) => authors
+                                    .split(';')
+                                    .map(|s| {
+                                        let mut iter = s.split(',');
+                                        Author {
+                                            id: iter.next().unwrap().parse().unwrap(),
+                                            name: iter.next().unwrap().to_string(),
+                                        }
+                                    })
+                                    .collect(),
+                                None => Vec::new(),
+                            }
+                        },
+                        keywords: {
+                            let keywords: Option<String> = keywords;
+                            match keywords {
+                                Some(keywords) => keywords
+                                    .split(';')
+                                    .map(|s| {
+                                        let mut iter = s.split(',');
+                                        Keyword {
+                                            id: iter.next().unwrap().parse().unwrap(),
+                                            keyword: iter.next().unwrap().to_string(),
+                                        }
+                                    })
+                                    .collect(),
+                                None => Vec::new(),
+                            }
+                        },
+                        publisher: {
+                            let publisher: Option<String> = publisher;
+                            match publisher {
+                                Some(publisher) => {
+                                    let mut iter = publisher.split(',');
+                                    Publisher {
+                                        id: iter.next().unwrap().parse().unwrap(),
+                                        name: iter.next().unwrap().to_string(),
+                                    }
+                                }
+                                None => Publisher {
+                                    id: 0,
+                                    name: "".to_string(),
+                                },
+                            }
+                        },
+                        suppliers: {
+                            let suppliers: Option<String> = suppliers;
+                            match suppliers {
+                                Some(suppliers) => suppliers
+                                    .split(';')
+                                    .map(|s| {
+                                        let mut iter = s.split(',');
+                                        Supplier {
+                                            id: iter.next().unwrap().parse().unwrap(),
+                                            name: iter.next().unwrap().to_string(),
+                                            telephone: iter.next().unwrap().to_string(),
+                                            email: iter.next().unwrap().to_string(),
+                                            address: iter.next().unwrap().to_string(),
+                                            fax: iter.next().unwrap().to_string(),
+                                        }
+                                    })
+                                    .collect(),
+                                None => Vec::new(),
+                            }
+                        },
+                        in_series: {
+                            let series: Option<String> = series;
+
+                            match series {
+                                Some(series) => series
+                                    .split(';')
+                                    .map(|s| {
+                                        let mut iter = s.split(',');
+                                        BookInSeries {
+                                            series_id: iter.next().unwrap().parse().unwrap(),
+                                            title: iter.next().unwrap().to_string(),
+                                            column: iter.next().unwrap().parse().unwrap(),
+                                        }
+                                    })
+                                    .collect(),
+                                None => Vec::new(),
+                            }
+                        },
+                        price,
+                        catalog,
+                        cover,
+                        is_onstore,
+                    }
+                },
+            )
+            .await?;
+
         Ok(result)
     }
 

@@ -3,7 +3,6 @@ use crate::utils::Token;
 use actix_web::{post, web, HttpResponse, Responder};
 use mysql_async::Pool;
 use serde::{Deserialize, Serialize};
-use std::mem::take;
 
 #[derive(Debug, Deserialize)]
 struct OrderCreateRequest {
@@ -21,14 +20,15 @@ struct OrderCreateResponse {
 #[post("/order/create")]
 pub async fn order_create(
     pool: web::Data<Pool>,
-    mut order_create_request: web::Json<OrderCreateRequest>,
+    order_create_request: web::Json<OrderCreateRequest>,
 ) -> impl Responder {
+    let request = order_create_request.into_inner();
     let token = &Token {
-        token: take(&mut order_create_request.token),
-        tag: take(&mut order_create_request.tag),
-        nonce: take(&mut order_create_request.nonce),
+        token: request.token,
+        tag: request.tag,
+        nonce: request.nonce,
     };
-    let items = &order_create_request.items;
+    let items = &request.items;
 
     match pool.get_conn().await {
         Ok(mut conn) => match OrderService::create_order(&mut conn, token, items).await {
@@ -66,12 +66,13 @@ struct OrderHistoryResponse {
 #[post("/order/history")]
 pub async fn order_history(
     pool: web::Data<Pool>,
-    mut order_history_request: web::Json<OrderHistoryRequest>,
+    order_history_request: web::Json<OrderHistoryRequest>,
 ) -> impl Responder {
+    let request = order_history_request.into_inner();
     let token = &Token {
-        token: take(&mut order_history_request.token),
-        tag: take(&mut order_history_request.tag),
-        nonce: take(&mut order_history_request.nonce),
+        token: request.token,
+        tag: request.tag,
+        nonce: request.nonce,
     };
 
     match pool.get_conn().await {
@@ -138,29 +139,30 @@ struct OrderDetailResponse {
 #[post("/order/{id}/detail")]
 pub async fn order_detail(
     pool: web::Data<Pool>,
-    mut order_detail_request: web::Json<OrderDetailRequest>,
+    order_detail_request: web::Json<OrderDetailRequest>,
     id: web::Path<(u32,)>,
 ) -> impl Responder {
+    let request = order_detail_request.into_inner();
     let token = &Token {
-        token: take(&mut order_detail_request.token),
-        tag: take(&mut order_detail_request.tag),
-        nonce: take(&mut order_detail_request.nonce),
+        token: request.token,
+        tag: request.tag,
+        nonce: request.nonce,
     };
     match pool.get_conn().await {
         Ok(mut conn) => {
             match OrderService::get_order_detail(&mut conn, token, id.into_inner().0).await {
-                Ok((order, mut book)) => {
+                Ok((order, book)) => {
                     let mut order_items = Vec::new();
-                    for item in book.iter_mut().zip(order.items.iter()) {
+                    for item in book.into_iter().zip(order.items.iter()) {
                         let (book, order_item) = item;
                         order_items.push(OrderItemResponse {
                             book_id: book.id,
-                            title: take(&mut book.title),
+                            title: book.title,
                             publisher: PublisherDetailResponse {
                                 publisher_id: book.publisher.id,
-                                name: take(&mut book.publisher.name),
+                                name: book.publisher.name,
                             },
-                            cover: take(&mut book.cover),
+                            cover: book.cover,
                             price: book.price.with_scale(2).to_string(),
                             quantity: order_item.quantity,
                             total_price: order_item.total_price.with_scale(2).to_string(),

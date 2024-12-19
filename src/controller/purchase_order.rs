@@ -3,7 +3,6 @@ use crate::utils::Token;
 use actix_web::{post, web, HttpResponse, Responder};
 use mysql_async::Pool;
 use serde::{Deserialize, Serialize};
-use std::mem::take;
 
 #[derive(Debug, Deserialize)]
 struct PurchaseOrderListRequest {
@@ -29,12 +28,13 @@ struct PurchaseOrderListResponse {
 #[post("/purchase_order/list")]
 pub async fn purchase_order_list(
     pool: web::Data<Pool>,
-    mut purchase_order_list_request: web::Json<PurchaseOrderListRequest>,
+    purchase_order_list_request: web::Json<PurchaseOrderListRequest>,
 ) -> impl Responder {
+    let request = purchase_order_list_request.into_inner();
     let token = &Token {
-        token: take(&mut purchase_order_list_request.token),
-        tag: take(&mut purchase_order_list_request.tag),
-        nonce: take(&mut purchase_order_list_request.nonce),
+        token: request.token,
+        tag: request.tag,
+        nonce: request.nonce,
     };
     match pool.get_conn().await {
         Ok(mut conn) => match PurchaseOrderService::get_purchase_order_list(&mut conn, token).await

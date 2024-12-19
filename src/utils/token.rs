@@ -60,10 +60,16 @@ pub async fn decrypt_token(token: &Token) -> anyhow::Result<(String, DateTime<Ut
 
     let mut token = BASE64_STANDARD.decode(token)?;
     let tag = BASE64_STANDARD.decode(tag)?;
+    if token.len() < 16 {
+        anyhow::bail!("invalid token");
+    }
     let mut tag_buffer = [0u8; 16];
     tag_buffer.copy_from_slice(tag.as_slice());
     let tag = aead::Tag::from(tag_buffer);
     let nonce = BASE64_STANDARD.decode(nonce)?;
+    if nonce.len() < 12 {
+        anyhow::bail!("invalid token");
+    }
     let mut nonce_buffer = [0u8; 12];
     nonce_buffer.copy_from_slice(nonce.as_slice());
     let nonce = aead::Nonce::assume_unique_for_key(nonce_buffer);

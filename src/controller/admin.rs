@@ -3,7 +3,6 @@ use crate::utils::Token;
 use actix_web::{post, web, HttpResponse, Responder};
 use mysql_async::Pool;
 use serde::{Deserialize, Serialize};
-use std::mem::take;
 
 #[derive(Debug, Deserialize)]
 struct AdminRegisterRequest {
@@ -23,16 +22,17 @@ struct AdminRegisterResponse {
 #[post("/admin/register")]
 pub async fn admin_register(
     pool: web::Data<Pool>,
-    mut admin_register_request: web::Json<AdminRegisterRequest>,
+    admin_register_request: web::Json<AdminRegisterRequest>,
 ) -> impl Responder {
+    let request = admin_register_request.into_inner();
     let token = &Token {
-        token: take(&mut admin_register_request.token),
-        tag: take(&mut admin_register_request.tag),
-        nonce: take(&mut admin_register_request.nonce),
+        token: request.token,
+        tag: request.tag,
+        nonce: request.nonce,
     };
-    let username = &admin_register_request.username;
-    let password = &admin_register_request.password;
-    let role = &admin_register_request.role;
+    let username = &request.username;
+    let password = &request.password;
+    let role = &request.role;
 
     let mut conn = pool.get_conn().await.unwrap();
 
@@ -61,8 +61,9 @@ pub async fn admin_login(
     pool: web::Data<Pool>,
     admin_login_request: web::Json<AdminLoginRequest>,
 ) -> impl Responder {
-    let username = &admin_login_request.username;
-    let password = &admin_login_request.password;
+    let request = admin_login_request.into_inner();
+    let username = &request.username;
+    let password = &request.password;
     match pool.get_conn().await {
         Ok(mut conn) => match AdminService::login(&mut conn, username, password).await {
             Ok(token) => HttpResponse::Ok().json(AdminLoginResponse {

@@ -59,7 +59,28 @@ impl BookService {
                 Some(keyword_id) => Ok(keyword_id),
                 None => anyhow::bail!("add keyword failed"),
             },
-            (_, _, false) => anyhow::bail!("permission denied: only staff or admin can add keyword"),
+            (_, _, false) => {
+                anyhow::bail!("permission denied: only staff or admin can add keyword")
+            }
         }
+    }
+
+    pub async fn search_by_title_natural(
+        conn: &mut Conn,
+        title: &str,
+    ) -> anyhow::Result<Vec<Book>> {
+        BookRepo::search_by_title_natural(conn, title).await
+    }
+
+    pub async fn search_by_keywords_natural(
+        conn: &mut Conn,
+        keywords: &Vec<String>,
+    ) -> anyhow::Result<Vec<Book>> {
+        let keywords = keywords
+            .iter()
+            .map(|k| format!("\"{}\" ", k.trim()))
+            .collect::<String>();
+        let keywords = keywords.trim();
+        BookRepo::search_by_keyword_natural(conn, keywords).await
     }
 }

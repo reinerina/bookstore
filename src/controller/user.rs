@@ -3,7 +3,6 @@ use crate::utils::Token;
 use actix_web::{post, web, HttpResponse, Responder};
 use mysql_async::Pool;
 use serde::{Deserialize, Serialize};
-use std::mem::take;
 
 #[derive(Deserialize)]
 struct LoginRequest {
@@ -27,10 +26,10 @@ pub async fn login(
     let password = &login_request.password;
     match pool.get_conn().await {
         Ok(mut conn) => match UserService::login(&mut conn, username, password).await {
-            Ok(mut token) => HttpResponse::Ok().json(LoginResponse {
-                token: take(&mut token.token),
-                tag: take(&mut token.tag),
-                nonce: take(&mut token.nonce),
+            Ok(token) => HttpResponse::Ok().json(LoginResponse {
+                token: token.token,
+                tag: token.tag,
+                nonce: token.nonce,
             }),
             Err(e) => HttpResponse::BadRequest().json(e.to_string()),
         },
@@ -62,10 +61,10 @@ pub async fn register(
     let name = &register_request.name;
     match pool.get_conn().await {
         Ok(mut conn) => match UserService::register(&mut conn, username, password, name).await {
-            Ok(mut token) => HttpResponse::Ok().json(RegisterResponse {
-                token: take(&mut token.token),
-                tag: take(&mut token.tag),
-                nonce: take(&mut token.nonce),
+            Ok(token) => HttpResponse::Ok().json(RegisterResponse {
+                token: token.token,
+                tag: token.tag,
+                nonce: token.nonce,
             }),
             Err(e) => HttpResponse::BadRequest().json(e.to_string()),
         },
@@ -92,12 +91,13 @@ struct CreditRuleResponse {
 #[post("/user/credit_rule")]
 pub async fn credit_rule(
     pool: web::Data<Pool>,
-    mut credit_rule_request: web::Json<CreditRuleRequest>,
+    credit_rule_request: web::Json<CreditRuleRequest>,
 ) -> impl Responder {
+    let request = credit_rule_request.into_inner();
     let token = &Token {
-        token: take(&mut credit_rule_request.token),
-        tag: take(&mut credit_rule_request.tag),
-        nonce: take(&mut credit_rule_request.nonce),
+        token: request.token,
+        tag: request.tag,
+        nonce: request.nonce,
     };
     match pool.get_conn().await {
         Ok(mut conn) => match UserService::get_credit_rule(&mut conn, token).await {
@@ -136,12 +136,13 @@ struct UserDetailResponse {
 #[post("/user/detail")]
 pub async fn user_detail(
     pool: web::Data<Pool>,
-    mut user_detail_request: web::Json<UserDetailRequest>,
+    user_detail_request: web::Json<UserDetailRequest>,
 ) -> impl Responder {
+    let request = user_detail_request.into_inner();
     let token = &Token {
-        token: take(&mut user_detail_request.token),
-        tag: take(&mut user_detail_request.tag),
-        nonce: take(&mut user_detail_request.nonce),
+        token: request.token,
+        tag: request.tag,
+        nonce: request.nonce,
     };
     match pool.get_conn().await {
         Ok(mut conn) => match UserService::get_user_detail(&mut conn, token).await {
@@ -201,12 +202,13 @@ struct UserLogoutResponse {
 #[post("/user/logout")]
 pub async fn user_logout(
     pool: web::Data<Pool>,
-    mut user_logout_request: web::Json<UserLogoutRequest>,
+    user_logout_request: web::Json<UserLogoutRequest>,
 ) -> impl Responder {
+    let request = user_logout_request.into_inner();
     let token = &Token {
-        token: take(&mut user_logout_request.token),
-        tag: take(&mut user_logout_request.tag),
-        nonce: take(&mut user_logout_request.nonce),
+        token: request.token,
+        tag: request.tag,
+        nonce: request.nonce,
     };
     match pool.get_conn().await {
         Ok(mut conn) => match AuthService::logout_user(&mut conn, token).await {
