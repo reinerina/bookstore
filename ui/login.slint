@@ -2,8 +2,8 @@ import { VerticalBox, HorizontalBox, Button, LineEdit } from "std-widgets.slint"
 
 export component LoginView inherits Window {
 
-    property <string> username;
-    property <string> password;
+    in-out property <string> username;
+    in-out property <string> password;
 
     in property <bool> error-login;
     in property <bool> error-register;
@@ -65,6 +65,8 @@ export component LoginView inherits Window {
                         text: "Login";
                         clicked => {
                             root.user-login(root.username, root.password);
+                            root.username = "";
+                            root.password = "";
                         }
                     }
 

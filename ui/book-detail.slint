@@ -1,6 +1,6 @@
 import { VerticalBox, HorizontalBox } from "std-widgets.slint";
 
-export struct BookDetail {
+export struct BookInDetail {
         id: int,
         isbn: string,
         title: string,
@@ -15,7 +15,7 @@ export struct BookDetail {
 }
 
 export component BookDetailView inherits Rectangle {
-    in property <BookDetail> book;
+    in property <BookInDetail> book;
     in property <length> image-width: 100px;
     in property <float> image-aspect-ratio: 1;
     in property <length> item-width: 300px;

@@ -5,7 +5,8 @@ import { UserDetail } from "user-detail.slint";
 import { BookListView, Book } from "book-list.slint";
 import { BookCartView, BookInCart } from "book-cart.slint";
 import { OrderHistoryView, OrderHistory } from "order-history.slint";
-import { BookDetailView, BookDetail } from "book-detail.slint";
+import { BookDetailView, BookInDetail } from "book-detail.slint";
+import { BookSearchView, BookInSearch } from "search-book.slint";
 
 export component MainWindow inherits Window {
 
@@ -18,10 +19,16 @@ export component MainWindow inherits Window {
 
     in property <[Book]> books;
     in property <[BookInCart]> books-in-cart;
+    in property <[BookInSearch]> books-in-search;
 
     in property <[OrderHistory]> orders;
 
     out property <int> selected-book-id: -1;
+
+    property <string> username;
+    property <string> password;
+    property <string> search-text;
+    property <int> search-mode: 0;
 
     callback user-login(string, string);
     callback user-register();
@@ -35,6 +42,7 @@ export component MainWindow inherits Window {
     callback open-book-detail(int);
 
     callback get-book-list();
+    callback get-search-book-list(string, int);
 
     callback get-user-detail();
 
@@ -51,7 +59,7 @@ export component MainWindow inherits Window {
                 @tr("Menu" => "Book"),
                 @tr("Menu" => "Cart"),
                 @tr("Menu" => "Order History"),
-                @tr("Menu" => "Easings"),
+                @tr("Menu" => "Search"),
                 @tr("Menu" => "About")
             ];
         }
@@ -83,6 +91,9 @@ export component MainWindow inherits Window {
                     error-login-message: root.error-login-message;
 
                     user-detail: root.user-detail;
+
+                    username <=> root.username;
+                    password <=> root.password;
 
                     user-login(username, password) => {
                         root.user-login(username, password);
@@ -160,13 +171,34 @@ export component MainWindow inherits Window {
                     window-height: root.height;
                     item-width: root.width - side-bar.width - 50px;
                 }
+
+                if (side-bar.current-item == 4):book-search-view := BookSearchView {
+
+                    books: root.books-in-search;
+                    image-width: 150px;
+                    image-aspect-ratio: 1;
+                    item-width: root.width - side-bar.width - 50px;
+                    window-height: root.height;
+                    window-width: root.width;
+
+                    search-text <=> root.search-text;
+                    search-mode <=> root.search-mode;
+
+                    open-book-detail(id) => {
+                        root.open-book-detail(id);
+                    }
+
+                    get-search-book-list(keyword, mode) => {
+                        root.get-search-book-list(keyword, mode);
+                    }
+                }
             }
         }
     }
 }
 
 export component BookDetailWindow inherits Window {
-    in property <BookDetail> book;
+    in property <BookInDetail> book;
     in property <length> image-width: 100px;
     in property <float> image-aspect-ratio: 1;
     in property <length> item-width: 600px;

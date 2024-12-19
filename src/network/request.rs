@@ -40,3 +40,13 @@ pub struct OrderHistoryRequest {
     pub tag: String,
     pub nonce: String,
 }
+
+#[derive(Serialize, Debug, Default)]
+pub struct BookTitleSearchRequest {
+    pub title: String,
+}
+
+#[derive(Serialize, Debug, Default)]
+pub struct BookKeywordsSearchRequest {
+    pub keywords: Vec<String>,
+}

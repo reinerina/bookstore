@@ -2,6 +2,8 @@ import { LoginView } from "login.slint";
 import { UserDetailView, UserDetail } from "user-detail.slint";
 
 export component UserView inherits Window {
+    in-out property <string> username;
+    in-out property <string> password;
     in property <bool> error-login;
     in property <bool> error-logout;
     in property <string> error-login-message;
@@ -18,7 +20,7 @@ export component UserView inherits Window {
     if !has-login:  LoginView {
         error-login: root.error-login;
         error-login-message: root.error-login-message;
-
+        username <=> root.username;
         user-login(username, password) => {
             root.user-login(username, password);
         }
