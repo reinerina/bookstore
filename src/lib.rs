@@ -1,4 +1,3 @@
-pub mod global;
 pub mod network;
 pub mod util;
 
