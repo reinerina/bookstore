@@ -113,39 +113,6 @@ pub async fn book_detail(pool: web::Data<Pool>, id: web::Path<(u32,)>) -> impl R
     }
 }
 
-#[derive(Debug, Deserialize)]
-struct BookShortageCreateRequest {
-    book_suppliers: Vec<(u32, u32, u32)>,
-    token: String,
-    tag: String,
-    nonce: String,
-}
-
-#[derive(Debug, Serialize)]
-struct BookShortageCreateResponse {
-    shortage_id: u32,
-}
-
-#[post("/book/shortage/create")]
-pub async fn book_shortage_create(
-    pool: web::Data<Pool>,
-    book_shortage_create_request: web::Json<BookShortageCreateRequest>,
-) -> impl Responder {
-    let request = book_shortage_create_request.into_inner();
-    let token = &Token {
-        token: request.token,
-        tag: request.tag,
-        nonce: request.nonce,
-    };
-    let book_suppliers = &request.book_suppliers;
-    let mut conn = pool.get_conn().await.unwrap();
-
-    match BookService::create_book_shortage(&mut conn, token, book_suppliers).await {
-        Ok(shortage_id) => HttpResponse::Ok().json(BookShortageCreateResponse { shortage_id }),
-        Err(e) => HttpResponse::BadRequest().body(e.to_string()),
-    }
-}
-
 #[derive(Debug, Serialize)]
 struct AuthorListItemResponse {
     author_id: u32,

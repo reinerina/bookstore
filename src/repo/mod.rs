@@ -14,6 +14,7 @@ pub use auth::AuthRepo;
 pub use book::BookRepo;
 pub use order::OrderRepo;
 pub use purchase_order::PurchaseOrderRepo;
+pub use shortage::ShortageRepo;
 pub use stock::StockRepo;
 pub use supplier::SupplierRepo;
 pub use user::UserRepo;

@@ -1,3 +1,4 @@
+use crate::entity::Book;
 use mysql_common::bigdecimal::BigDecimal;
 use mysql_common::time::PrimitiveDateTime;
 
@@ -5,7 +6,7 @@ use mysql_common::time::PrimitiveDateTime;
 pub struct SupplierCatalog {
     pub id: u32,
     pub supplier_id: u32,
-    pub book_id: u32,
+    pub book: Book,
     pub available_quantity: u32,
     pub price: BigDecimal,
 }

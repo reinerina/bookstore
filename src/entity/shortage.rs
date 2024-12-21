@@ -7,6 +7,17 @@ pub struct Shortage {
     pub is_resolved: bool,
 }
 
+impl Default for Shortage {
+    fn default() -> Self {
+        Self {
+            id: 0,
+            registration_date: PrimitiveDateTime::MIN,
+            item: Vec::new(),
+            is_resolved: false,
+        }
+    }
+}
+
 pub struct ShortageItem {
     pub id: u32,
     pub shortage_id: u32,

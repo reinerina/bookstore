@@ -1,4 +1,5 @@
 use crate::entity::{Supplier, SupplierCatalog};
+use crate::repo::BookRepo;
 use mysql_async::prelude::{Query, WithParams};
 use mysql_async::{params, Conn};
 use mysql_common::bigdecimal::BigDecimal;
@@ -113,20 +114,32 @@ WHERE
     }
 
     pub async fn get_catalog_list(conn: &mut Conn) -> anyhow::Result<Vec<SupplierCatalog>> {
-        let query = r"SELECT catalog_id,supplier_id,book_id,price,available_quantity FROM supplier_catalogs;";
+        let query = r"SELECT supplier_catalog_id,supplier_id,book_id,price,available_quantity FROM supplier_catalogs;";
         let result = query
             .map(
-                conn,
-                |(catalog_id, supplier_id, book_id, price, available_quantity)| SupplierCatalog {
-                    id: catalog_id,
-                    supplier_id,
-                    book_id,
-                    price,
-                    available_quantity,
+                &mut *conn,
+                |(catalog_id, supplier_id, book_id, price, available_quantity)| {
+                    let book_id: u32 = book_id;
+                    (
+                        SupplierCatalog {
+                            id: catalog_id,
+                            supplier_id,
+                            price,
+                            available_quantity,
+                            ..Default::default()
+                        },
+                        book_id,
+                    )
                 },
             )
             .await?;
-        Ok(result)
+        let mut res = Vec::with_capacity(result.len());
+        for (mut catalog, book_id) in result.into_iter() {
+            let book = BookRepo::get_book_detail(conn, book_id).await?;
+            catalog.book = book.unwrap();
+            res.push(catalog);
+        }
+        Ok(res)
     }
 
     pub async fn get_supplier_catalog(
@@ -134,7 +147,7 @@ WHERE
         supplier_id: u32,
         book_id: u32,
     ) -> anyhow::Result<Option<SupplierCatalog>> {
-        let query = r"SELECT catalog_id,supplier_id,book_id,price,available_quantity FROM supplier_catalogs
+        let query = r"SELECT supplier_catalog_id,supplier_id,book_id,price,available_quantity FROM supplier_catalogs
         WHERE supplier_id=:supplier_id AND book_id=:book_id;";
         let params = params! {
             "supplier_id" => supplier_id,
@@ -143,18 +156,30 @@ WHERE
         let mut result = query
             .with(params)
             .map(
-                conn,
-                |(catalog_id, supplier_id, book_id, price, available_quantity)| SupplierCatalog {
-                    id: catalog_id,
-                    supplier_id,
-                    book_id,
-                    price,
-                    available_quantity,
+                &mut *conn,
+                |(catalog_id, supplier_id, book_id, price, available_quantity)| {
+                    let book_id: u32 = book_id;
+                    (
+                        SupplierCatalog {
+                            id: catalog_id,
+                            supplier_id,
+                            price,
+                            available_quantity,
+                            ..Default::default()
+                        },
+                        book_id,
+                    )
                 },
             )
             .await?;
-
-        Ok(result.pop())
+        match result.pop() {
+            Some((mut catalog, book_id)) => {
+                let book = BookRepo::get_book_detail(conn, book_id).await?;
+                catalog.book = book.unwrap();
+                Ok(Some(catalog))
+            }
+            None => Ok(None),
+        }
     }
 
     pub async fn add_supplier_catalog(

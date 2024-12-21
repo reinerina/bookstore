@@ -945,32 +945,4 @@ ORDER BY
         let keyword_id = query.with(()).first::<u32, &mut Conn>(conn).await?;
         Ok(keyword_id)
     }
-
-    pub async fn create_book_shortage(
-        conn: &mut Conn,
-        book_suppliers: &Vec<(u32, u32, u32)>,
-    ) -> anyhow::Result<Option<u32>> {
-        let query = r"INSERT INTO shortages(registration_date) VALUES(NOW());";
-        query.with(()).run(&mut *conn).await?;
-        let query = r"SELECT LAST_INSERT_ID() as shortage_id;";
-        let shortage_id = query.with(()).first::<u32, &mut Conn>(conn).await?;
-
-        let shortage_id = match shortage_id {
-            Some(shortage_id) => {
-                for (book_id, supplier_id, shortage) in book_suppliers {
-                    let query = r"INSERT INTO book_shortages(shortage_id,book_id,supplier_id,shortage) VALUES(:shortage_id,:book_id,:supplier_id,:shortage);";
-                    let params = params! {
-                        "shortage_id" => shortage_id,
-                        "book_id" => book_id,
-                        "supplier_id" => supplier_id,
-                        "shortage" => shortage,
-                    };
-                    query.with(params).run(&mut *conn).await?;
-                }
-                Ok(Some(shortage_id))
-            }
-            None => anyhow::bail!("create shortage failed"),
-        };
-        shortage_id
-    }
 }
