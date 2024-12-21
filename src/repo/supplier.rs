@@ -1,6 +1,7 @@
-use crate::entity::Supplier;
+use crate::entity::{Supplier, SupplierCatalog};
 use mysql_async::prelude::{Query, WithParams};
 use mysql_async::{params, Conn};
+use mysql_common::bigdecimal::BigDecimal;
 
 pub struct SupplierRepo;
 
@@ -91,5 +92,88 @@ WHERE
             )
             .await?;
         Ok(result)
+    }
+
+    pub async fn get_supplier_list(conn: &mut Conn) -> anyhow::Result<Vec<Supplier>> {
+        let query = r"SELECT supplier_id,name,telephone,email,address,fax FROM suppliers;";
+        let result = query
+            .map(
+                conn,
+                |(supplier_id, name, telephone, email, address, fax)| Supplier {
+                    id: supplier_id,
+                    name,
+                    telephone,
+                    email,
+                    address,
+                    fax,
+                },
+            )
+            .await?;
+        Ok(result)
+    }
+
+    pub async fn get_catalog_list(conn: &mut Conn) -> anyhow::Result<Vec<SupplierCatalog>> {
+        let query = r"SELECT catalog_id,supplier_id,book_id,price,available_quantity FROM supplier_catalogs;";
+        let result = query
+            .map(
+                conn,
+                |(catalog_id, supplier_id, book_id, price, available_quantity)| SupplierCatalog {
+                    id: catalog_id,
+                    supplier_id,
+                    book_id,
+                    price,
+                    available_quantity,
+                },
+            )
+            .await?;
+        Ok(result)
+    }
+
+    pub async fn get_supplier_catalog(
+        conn: &mut Conn,
+        supplier_id: u32,
+        book_id: u32,
+    ) -> anyhow::Result<Option<SupplierCatalog>> {
+        let query = r"SELECT catalog_id,supplier_id,book_id,price,available_quantity FROM supplier_catalogs
+        WHERE supplier_id=:supplier_id AND book_id=:book_id;";
+        let params = params! {
+            "supplier_id" => supplier_id,
+            "book_id" => book_id,
+        };
+        let mut result = query
+            .with(params)
+            .map(
+                conn,
+                |(catalog_id, supplier_id, book_id, price, available_quantity)| SupplierCatalog {
+                    id: catalog_id,
+                    supplier_id,
+                    book_id,
+                    price,
+                    available_quantity,
+                },
+            )
+            .await?;
+
+        Ok(result.pop())
+    }
+
+    pub async fn add_supplier_catalog(
+        conn: &mut Conn,
+        supplier_id: u32,
+        book_id: u32,
+        price: BigDecimal,
+        available_quantity: u32,
+    ) -> anyhow::Result<Option<u32>> {
+        let query = r"INSERT INTO supplier_catalogs(supplier_id,book_id,price,available_quantity) VALUES(:supplier_id,:book_id,:price,:available_quantity);";
+        let params = params! {
+            "supplier_id" => supplier_id,
+            "book_id" => book_id,
+            "price" => price,
+            "available_quantity" => available_quantity,
+        };
+        query.with(params).run(&mut *conn).await?;
+        let query = r"SELECT LAST_INSERT_ID() as catalog_id;";
+        let catalog_id = query.with(()).first::<u32, &mut Conn>(conn).await?;
+        Ok(catalog_id)
     }
 }

@@ -409,7 +409,7 @@ pub async fn book_title_search(
 
 #[derive(Debug, Deserialize)]
 struct BookKeywordsSearchRequest {
-    keywords: Vec<String>,
+    keywords: String,
 }
 
 #[derive(Debug, Serialize)]
@@ -491,6 +491,97 @@ pub async fn book_keywords_search(
                     })
                     .collect();
                 HttpResponse::Ok().json(BookKeywordsSearchResponse { books })
+            }
+            Err(e) => HttpResponse::BadGateway().body(e.to_string()),
+        },
+        Err(e) => HttpResponse::BadGateway().body(e.to_string()),
+    }
+}
+
+#[derive(Debug, Deserialize)]
+struct BookAuthorsSearchRequest {
+    authors: String,
+}
+
+#[derive(Debug, Serialize)]
+struct BookAuthorsSearchItemResponse {
+    book_id: u32,
+    isbn: String,
+    title: String,
+    authors: Vec<AuthorListItemResponse>,
+    publisher: PublisherListItemResponse,
+    suppliers: Vec<SupplierListItemResponse>,
+    in_series: Vec<SeriesListItemResponse>,
+    price: String,
+    keywords: Vec<KeywordListItemResponse>,
+    cover: String,
+    is_onstore: bool,
+}
+
+#[derive(Debug, Serialize)]
+struct BookAuthorsSearchResponse {
+    books: Vec<BookAuthorsSearchItemResponse>,
+}
+
+#[post("/book/search/authors")]
+pub async fn book_authors_search(
+    pool: web::Data<Pool>,
+    authors: web::Json<BookAuthorsSearchRequest>,
+) -> impl Responder {
+    let request = authors.into_inner();
+    let authors = &request.authors;
+    match pool.get_conn().await {
+        Ok(mut conn) => match BookService::search_by_authors_natural(&mut conn, authors).await {
+            Ok(books) => {
+                let books = books
+                    .into_iter()
+                    .map(|book| BookAuthorsSearchItemResponse {
+                        book_id: book.id,
+                        isbn: book.isbn,
+                        title: book.title,
+                        authors: book
+                            .authors
+                            .into_iter()
+                            .map(|author| AuthorListItemResponse {
+                                author_id: author.id,
+                                name: author.name,
+                            })
+                            .collect(),
+                        publisher: PublisherListItemResponse {
+                            publisher_id: book.publisher.id,
+                            name: book.publisher.name,
+                        },
+                        suppliers: book
+                            .suppliers
+                            .into_iter()
+                            .map(|supplier| SupplierListItemResponse {
+                                supplier_id: supplier.id,
+                                name: supplier.name,
+                            })
+                            .collect(),
+                        in_series: book
+                            .in_series
+                            .into_iter()
+                            .map(|series| SeriesListItemResponse {
+                                series_id: series.series_id,
+                                name: series.title,
+                                column: series.column,
+                            })
+                            .collect(),
+                        price: book.price.to_string(),
+                        keywords: book
+                            .keywords
+                            .into_iter()
+                            .map(|keyword| KeywordListItemResponse {
+                                keyword_id: keyword.id,
+                                keyword: keyword.keyword,
+                            })
+                            .collect(),
+                        cover: book.cover,
+                        is_onstore: book.is_onstore,
+                    })
+                    .collect();
+                HttpResponse::Ok().json(BookAuthorsSearchResponse { books })
             }
             Err(e) => HttpResponse::BadGateway().body(e.to_string()),
         },

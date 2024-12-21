@@ -74,13 +74,31 @@ impl BookService {
 
     pub async fn search_by_keywords_natural(
         conn: &mut Conn,
-        keywords: &Vec<String>,
+        keywords: &str,
     ) -> anyhow::Result<Vec<Book>> {
         let keywords = keywords
-            .iter()
-            .map(|k| format!("\"{}\" ", k.trim()))
+            .split(|c| {
+                let c: char = c;
+                c == ',' || c == ';' || c.is_whitespace()
+            })
+            .map(|s| format!("{} ", s))
             .collect::<String>();
         let keywords = keywords.trim();
         BookRepo::search_by_keyword_natural(conn, keywords).await
+    }
+
+    pub async fn search_by_authors_natural(
+        conn: &mut Conn,
+        authors: &str,
+    ) -> anyhow::Result<Vec<Book>> {
+        let authors = authors
+            .split(|c| {
+                let c: char = c;
+                c == ',' || c == ';' || c.is_whitespace()
+            })
+            .map(|s| format!("{} ", s))
+            .collect::<String>();
+        let authors = authors.trim();
+        BookRepo::search_by_author_natural(conn, authors).await
     }
 }
