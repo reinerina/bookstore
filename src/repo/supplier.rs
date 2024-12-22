@@ -56,6 +56,28 @@ impl SupplierRepo {
         Ok(supplier_id)
     }
 
+    pub async fn update_supplier(
+        conn: &mut Conn,
+        supplier_id: u32,
+        name: &str,
+        telephone: &str,
+        email: &str,
+        address: &str,
+        fax: &str,
+    ) -> anyhow::Result<()> {
+        let query = r"UPDATE suppliers SET name=:name,telephone=:telephone,email=:email,address=:address,fax=:fax WHERE supplier_id=:supplier_id;";
+        let params = params! {
+            "name" => name,
+            "telephone" => telephone,
+            "email" => email,
+            "address" => address,
+            "fax" => fax,
+            "supplier_id" => supplier_id,
+        };
+        query.with(params).run(&mut *conn).await?;
+        Ok(())
+    }
+
     pub async fn get_available_suppliers(
         conn: &mut Conn,
         book_id: u32,
@@ -180,6 +202,114 @@ WHERE
             }
             None => Ok(None),
         }
+    }
+
+    pub async fn update_supplier_catalog(
+        conn: &mut Conn,
+        catalog_id: u32,
+        price: BigDecimal,
+        available_quantity: u32,
+    ) -> anyhow::Result<()> {
+        let query = r"UPDATE supplier_catalogs SET price=:price,available_quantity=:available_quantity WHERE supplier_catalog_id=:catalog_id;";
+        let params = params! {
+            "price" => price,
+            "available_quantity" => available_quantity,
+            "catalog_id" => catalog_id,
+        };
+        query.with(params).run(&mut *conn).await?;
+        Ok(())
+    }
+
+    pub async fn get_catalog_list_by_supplier(
+        conn: &mut Conn,
+        supplier_id: u32,
+    ) -> anyhow::Result<Vec<SupplierCatalog>> {
+        let query = r"SELECT supplier_catalog_id,supplier_id,book_id,price,available_quantity FROM supplier_catalogs
+        WHERE supplier_id=:supplier_id;";
+        let params = params! {
+            "supplier_id" => supplier_id,
+        };
+        let result = query
+            .with(params)
+            .map(
+                &mut *conn,
+                |(catalog_id, supplier_id, book_id, price, available_quantity)| {
+                    let book_id: u32 = book_id;
+                    (
+                        SupplierCatalog {
+                            id: catalog_id,
+                            supplier_id,
+                            price,
+                            available_quantity,
+                            ..Default::default()
+                        },
+                        book_id,
+                    )
+                },
+            )
+            .await?;
+        let mut res = Vec::with_capacity(result.len());
+        for (mut catalog, book_id) in result.into_iter() {
+            let book = BookRepo::get_book_detail(conn, book_id).await?;
+            catalog.book = book.unwrap();
+            res.push(catalog);
+        }
+        Ok(res)
+    }
+
+    pub async fn get_catalog_list_by_book(
+        conn: &mut Conn,
+        book_id: u32,
+    ) -> anyhow::Result<Vec<SupplierCatalog>> {
+        let query = r"SELECT supplier_catalog_id,supplier_id,book_id,price,available_quantity FROM supplier_catalogs
+        WHERE book_id=:book_id;";
+        let params = params! {
+            "book_id" => book_id,
+        };
+        let result = query
+            .with(params)
+            .map(
+                &mut *conn,
+                |(catalog_id, supplier_id, book_id, price, available_quantity)| {
+                    let book_id: u32 = book_id;
+                    (
+                        SupplierCatalog {
+                            id: catalog_id,
+                            supplier_id,
+                            price,
+                            available_quantity,
+                            ..Default::default()
+                        },
+                        book_id,
+                    )
+                },
+            )
+            .await?;
+        let mut res = Vec::with_capacity(result.len());
+        for (mut catalog, book_id) in result.into_iter() {
+            let book = BookRepo::get_book_detail(conn, book_id).await?;
+            catalog.book = book.unwrap();
+            res.push(catalog);
+        }
+        Ok(res)
+    }
+
+    pub async fn delete_supplier_catalog(conn: &mut Conn, catalog_id: u32) -> anyhow::Result<()> {
+        let query = r"DELETE FROM supplier_catalogs WHERE supplier_catalog_id=:catalog_id;";
+        let params = params! {
+            "catalog_id" => catalog_id,
+        };
+        query.with(params).run(&mut *conn).await?;
+        Ok(())
+    }
+
+    pub async fn delete_supplier(conn: &mut Conn, supplier_id: u32) -> anyhow::Result<()> {
+        let query = r"DELETE FROM suppliers WHERE supplier_id=:supplier_id;";
+        let params = params! {
+            "supplier_id" => supplier_id,
+        };
+        query.with(params).run(&mut *conn).await?;
+        Ok(())
     }
 
     pub async fn add_supplier_catalog(

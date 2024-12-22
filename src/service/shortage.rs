@@ -38,17 +38,31 @@ impl ShortageService {
         }
     }
 
-    pub async fn get_shortage_list(conn: &mut Conn) -> anyhow::Result<Vec<Shortage>> {
-        ShortageRepo::get_shortage_list(conn).await
+    pub async fn get_shortage_list(
+        conn: &mut Conn,
+        token: &Token,
+    ) -> anyhow::Result<Vec<Shortage>> {
+        match AdminService::verify_admin(conn, token, AdminRole::Staff).await? {
+            (_, _, true) => ShortageRepo::get_shortage_list(conn).await,
+            (_, _, false) => {
+                anyhow::bail!("permission denied: only staff or admin can view shortage list")
+            }
+        }
     }
 
     pub async fn get_shortage_detail(
         conn: &mut Conn,
         shortage_id: u32,
+        token: &Token,
     ) -> anyhow::Result<Shortage> {
-        match ShortageRepo::get_shortage_detail(conn, shortage_id).await? {
-            Some(shortage) => Ok(shortage),
-            None => anyhow::bail!("shortage {} not found", shortage_id),
+        match AdminService::verify_admin(conn, token, AdminRole::Staff).await? {
+            (_, _, true) => match ShortageRepo::get_shortage_detail(conn, shortage_id).await? {
+                Some(shortage) => Ok(shortage),
+                None => anyhow::bail!("shortage {} not found", shortage_id),
+            },
+            (_, _, false) => {
+                anyhow::bail!("permission denied: only staff or admin can view shortage")
+            }
         }
     }
 }
