@@ -1,4 +1,4 @@
--- MySQL dump 10.13  Distrib 8.0.40, for macos15.1 (arm64)
+-- MySQL dump 10.13  Distrib 9.0.1, for macos15.1 (arm64)
 --
 -- Host: 127.0.0.1    Database: bookstore
 -- ------------------------------------------------------
@@ -801,4 +801,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2024-12-22 14:57:39
+-- Dump completed on 2024-12-22 16:04:56
