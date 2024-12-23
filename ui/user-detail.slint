@@ -17,6 +17,7 @@ export component UserDetailView inherits Window {
 
     callback user-logout();
     callback get-user-detail();
+    callback user-update(UserDetail);
 
     width: 100%;
     height: 100%;
@@ -67,10 +68,19 @@ export component UserDetailView inherits Window {
                     visible: root.error-logout;
                 }
 
-                Button {
-                    text: "Logout";
-                    clicked => {
-                        root.user-logout();
+                HorizontalBox {
+                    Button {
+                        text: "Logout";
+                        clicked => {
+                            root.user-logout();
+                        }
+                    }
+
+                    Button {
+                        text: "Update";
+                        clicked => {
+                            root.user-update(root.user-detail);
+                        }
                     }
                 }
             }

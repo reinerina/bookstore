@@ -8,8 +8,22 @@ pub struct LoginResponse {
 }
 
 #[derive(Deserialize, Debug)]
+pub struct RegisterResponse {
+    pub token: String,
+    pub tag: String,
+    pub nonce: String,
+}
+
+#[derive(Deserialize, Debug)]
 pub struct LogoutResponse {
     pub message: String,
+}
+
+#[derive(Deserialize, Debug)]
+pub struct UserUpdateResponse {
+    pub token: String,
+    pub tag: String,
+    pub nonce: String,
 }
 
 #[derive(Deserialize, Debug)]
@@ -181,6 +195,42 @@ impl Into<BookListItemResponse> for BookTitleSearchItemResponse {
     }
 }
 
+impl Into<BookKeywordsSearchItemResponse> for BookTitleSearchItemResponse {
+    fn into(self) -> BookKeywordsSearchItemResponse {
+        BookKeywordsSearchItemResponse {
+            book_id: self.book_id,
+            isbn: self.isbn,
+            title: self.title,
+            authors: self.authors,
+            publisher: self.publisher,
+            suppliers: self.suppliers,
+            in_series: self.in_series,
+            price: self.price,
+            keywords: self.keywords,
+            cover: self.cover,
+            is_onstore: self.is_onstore,
+        }
+    }
+}
+
+impl Into<BookAuthorsSearchItemResponse> for BookTitleSearchItemResponse {
+    fn into(self) -> BookAuthorsSearchItemResponse {
+        BookAuthorsSearchItemResponse {
+            book_id: self.book_id,
+            isbn: self.isbn,
+            title: self.title,
+            authors: self.authors,
+            publisher: self.publisher,
+            suppliers: self.suppliers,
+            in_series: self.in_series,
+            price: self.price,
+            keywords: self.keywords,
+            cover: self.cover,
+            is_onstore: self.is_onstore,
+        }
+    }
+}
+
 #[derive(Debug, Deserialize)]
 pub struct BookTitleSearchResponse {
     pub books: Vec<BookTitleSearchItemResponse>,
@@ -189,6 +239,22 @@ pub struct BookTitleSearchResponse {
 impl Into<BookListResponse> for BookTitleSearchResponse {
     fn into(self) -> BookListResponse {
         BookListResponse {
+            books: self.books.into_iter().map(|b| b.into()).collect(),
+        }
+    }
+}
+
+impl Into<BookAuthorsSearchResponse> for BookTitleSearchResponse {
+    fn into(self) -> BookAuthorsSearchResponse {
+        BookAuthorsSearchResponse {
+            books: self.books.into_iter().map(|b| b.into()).collect(),
+        }
+    }
+}
+
+impl Into<BookKeywordsSearchResponse> for BookTitleSearchResponse {
+    fn into(self) -> BookKeywordsSearchResponse {
+        BookKeywordsSearchResponse {
             books: self.books.into_iter().map(|b| b.into()).collect(),
         }
     }
@@ -227,6 +293,42 @@ impl Into<BookTitleSearchItemResponse> for BookKeywordsSearchItemResponse {
     }
 }
 
+impl Into<BookListItemResponse> for BookKeywordsSearchItemResponse {
+    fn into(self) -> BookListItemResponse {
+        BookListItemResponse {
+            book_id: self.book_id,
+            isbn: self.isbn,
+            title: self.title,
+            authors: self.authors,
+            publisher: self.publisher,
+            suppliers: self.suppliers,
+            in_series: self.in_series,
+            price: self.price,
+            keywords: self.keywords,
+            cover: self.cover,
+            is_onstore: self.is_onstore,
+        }
+    }
+}
+
+impl Into<BookAuthorsSearchItemResponse> for BookKeywordsSearchItemResponse {
+    fn into(self) -> BookAuthorsSearchItemResponse {
+        BookAuthorsSearchItemResponse {
+            book_id: self.book_id,
+            isbn: self.isbn,
+            title: self.title,
+            authors: self.authors,
+            publisher: self.publisher,
+            suppliers: self.suppliers,
+            in_series: self.in_series,
+            price: self.price,
+            keywords: self.keywords,
+            cover: self.cover,
+            is_onstore: self.is_onstore,
+        }
+    }
+}
+
 #[derive(Debug, Deserialize)]
 pub struct BookKeywordsSearchResponse {
     pub books: Vec<BookKeywordsSearchItemResponse>,
@@ -235,6 +337,120 @@ pub struct BookKeywordsSearchResponse {
 impl Into<BookTitleSearchResponse> for BookKeywordsSearchResponse {
     fn into(self) -> BookTitleSearchResponse {
         BookTitleSearchResponse {
+            books: self.books.into_iter().map(|b| b.into()).collect(),
+        }
+    }
+}
+
+impl Into<BookListResponse> for BookKeywordsSearchResponse {
+    fn into(self) -> BookListResponse {
+        BookListResponse {
+            books: self.books.into_iter().map(|b| b.into()).collect(),
+        }
+    }
+}
+
+impl Into<BookAuthorsSearchResponse> for BookKeywordsSearchResponse {
+    fn into(self) -> BookAuthorsSearchResponse {
+        BookAuthorsSearchResponse {
+            books: self.books.into_iter().map(|b| b.into()).collect(),
+        }
+    }
+}
+
+#[derive(Debug, Deserialize)]
+pub struct BookAuthorsSearchItemResponse {
+    pub book_id: u32,
+    pub isbn: String,
+    pub title: String,
+    pub authors: Vec<AuthorListItemResponse>,
+    pub publisher: PublisherListItemResponse,
+    pub suppliers: Vec<SupplierListItemResponse>,
+    pub in_series: Vec<SeriesListItemResponse>,
+    pub price: String,
+    pub keywords: Vec<KeywordListItemResponse>,
+    pub cover: String,
+    pub is_onstore: bool,
+}
+
+impl Into<BookTitleSearchItemResponse> for BookAuthorsSearchItemResponse {
+    fn into(self) -> BookTitleSearchItemResponse {
+        BookTitleSearchItemResponse {
+            book_id: self.book_id,
+            isbn: self.isbn,
+            title: self.title,
+            authors: self.authors,
+            publisher: self.publisher,
+            suppliers: self.suppliers,
+            in_series: self.in_series,
+            price: self.price,
+            keywords: self.keywords,
+            cover: self.cover,
+            is_onstore: self.is_onstore,
+        }
+    }
+}
+
+impl Into<BookKeywordsSearchItemResponse> for BookAuthorsSearchItemResponse {
+    fn into(self) -> BookKeywordsSearchItemResponse {
+        BookKeywordsSearchItemResponse {
+            book_id: self.book_id,
+            isbn: self.isbn,
+            title: self.title,
+            authors: self.authors,
+            publisher: self.publisher,
+            suppliers: self.suppliers,
+            in_series: self.in_series,
+            price: self.price,
+            keywords: self.keywords,
+            cover: self.cover,
+            is_onstore: self.is_onstore,
+        }
+    }
+}
+
+impl Into<BookListItemResponse> for BookAuthorsSearchItemResponse {
+    fn into(self) -> BookListItemResponse {
+        BookListItemResponse {
+            book_id: self.book_id,
+            isbn: self.isbn,
+            title: self.title,
+            authors: self.authors,
+            publisher: self.publisher,
+            suppliers: self.suppliers,
+            in_series: self.in_series,
+            price: self.price,
+            keywords: self.keywords,
+            cover: self.cover,
+            is_onstore: self.is_onstore,
+        }
+    }
+}
+
+#[derive(Debug, Deserialize)]
+pub struct BookAuthorsSearchResponse {
+    pub books: Vec<BookAuthorsSearchItemResponse>,
+}
+
+impl Into<BookTitleSearchResponse> for BookAuthorsSearchResponse {
+    fn into(self) -> BookTitleSearchResponse {
+        BookTitleSearchResponse {
+            books: self.books.into_iter().map(|b| b.into()).collect(),
+        }
+    }
+}
+
+impl Into<BookKeywordsSearchResponse> for BookAuthorsSearchResponse {
+    fn into(self) -> BookKeywordsSearchResponse {
+        BookKeywordsSearchResponse {
+            books: self.books.into_iter().map(|b| b.into()).collect(),
+        }
+    }
+}
+
+impl Into<BookListResponse> for BookAuthorsSearchResponse {
+    fn into(self) -> BookListResponse {
+        BookListResponse {
             books: self.books.into_iter().map(|b| b.into()).collect(),
         }
     }

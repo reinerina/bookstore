@@ -12,8 +12,9 @@ export component UserView inherits Window {
     in property <bool> has-login;
 
     callback user-login(string, string);
-    callback user-register();
+    callback user-register(string, string);
     callback user-logout();
+    callback user-update(UserDetail);
 
     callback get-user-detail();
 
@@ -23,6 +24,10 @@ export component UserView inherits Window {
         username <=> root.username;
         user-login(username, password) => {
             root.user-login(username, password);
+        }
+
+        user-register(username, password) => {
+            root.user-register(username, password);
         }
     }
 
@@ -35,6 +40,10 @@ export component UserView inherits Window {
         }
         get-user-detail => {
             root.get-user-detail();
+        }
+
+        user-update(user-detail) => {
+            root.user-update(user-detail);
         }
     }
 }

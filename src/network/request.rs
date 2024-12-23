@@ -7,6 +7,13 @@ pub struct LoginRequest {
 }
 
 #[derive(Serialize, Debug, Default)]
+pub struct RegisterRequest {
+    pub username: String,
+    pub password: String,
+    pub name: String,
+}
+
+#[derive(Serialize, Debug, Default)]
 pub struct LogoutRequest {
     pub token: String,
     pub tag: String,
@@ -18,6 +25,17 @@ pub struct UserDetailRequest {
     pub token: String,
     pub tag: String,
     pub nonce: String,
+}
+
+#[derive(Serialize, Debug, Default)]
+pub struct UserUpdateRequest {
+    pub token: String,
+    pub tag: String,
+    pub nonce: String,
+    pub username: String,
+    pub name: String,
+    pub email: String,
+    pub address: String,
 }
 
 #[derive(Serialize, Debug, Default)]
@@ -48,5 +66,10 @@ pub struct BookTitleSearchRequest {
 
 #[derive(Serialize, Debug, Default)]
 pub struct BookKeywordsSearchRequest {
-    pub keywords: Vec<String>,
+    pub keywords: String,
+}
+
+#[derive(Serialize, Debug, Default)]
+pub struct BookAuthorsSearchRequest {
+    pub authors: String,
 }

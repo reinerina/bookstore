@@ -73,6 +73,64 @@ fn main() -> Result<(), slint::PlatformError> {
         }
     });
 
+    main_window.on_user_register({
+        let rt = rt.as_weak();
+        let main_window = main_window.as_weak();
+        let user_token = user_token.as_weak();
+        move |username, password| {
+            let rt = rt.clone();
+            let main_window = main_window.clone();
+            let user_token = user_token.clone();
+            slint::spawn_local(async move {
+                let rt = rt.unwrap();
+                let user_token = user_token.unwrap();
+                match rt
+                    .spawn(async move {
+                        let register_request = RegisterRequest {
+                            username: username.to_string(),
+                            password: password.to_string(),
+                            name: username.to_string(),
+                        };
+
+                        match url_post::<RegisterResponse, RegisterRequest>(
+                            "/user/register",
+                            register_request,
+                        )
+                        .await
+                        {
+                            Ok(register_response) => {
+                                user_token
+                                    .set(Token {
+                                        token: register_response.token,
+                                        tag: register_response.tag,
+                                        nonce: register_response.nonce,
+                                    })
+                                    .await;
+                                Ok(())
+                            }
+                            Err(e) => Err(e),
+                        }
+                    })
+                    .await
+                    .unwrap()
+                {
+                    Err(e) => {
+                        // let main_window = main_window.unwrap();
+                        // main_window.set_error_register(true);
+                        // main_window.set_error_register_message(e.to_string().into());
+                        log::error!("{}", e.to_string());
+                    }
+                    Ok(_) => {
+                        let main_window = main_window.unwrap();
+                        // main_window.set_error_register(false);
+                        main_window.set_has_login(true);
+                    }
+                }
+            })
+            .unwrap();
+        }
+    });
+
     main_window.on_get_user_detail({
         let rt = rt.as_weak();
         let main_window = main_window.as_weak();
@@ -131,6 +189,80 @@ fn main() -> Result<(), slint::PlatformError> {
                 }
             })
             .unwrap();
+        }
+    });
+
+    main_window.on_user_update({
+        let rt = rt.as_weak();
+        let main_window = main_window.as_weak();
+        let user_token = user_token.as_weak();
+        move |detail| {
+            let user_update_window = UserDetailUpdateWindow::new().unwrap();
+            user_update_window.on_update_user_detail({
+                let rt = rt.clone();
+                let main_window = main_window.clone();
+                let user_token = user_token.clone();
+
+                move |detail1| {
+                    let rt = rt.clone();
+                    let main_window = main_window.clone();
+                    let user_token = user_token.clone();
+                    slint::spawn_local(async move {
+                        let rt = rt.unwrap();
+                        let user_token = user_token.unwrap();
+                        match rt
+                            .spawn(async move {
+                                match user_token.get().await {
+                                    Some(token) => {
+                                        match url_post::<UserUpdateResponse, UserUpdateRequest>(
+                                            "/user/update",
+                                            UserUpdateRequest {
+                                                token: token.token,
+                                                tag: token.tag,
+                                                nonce: token.nonce,
+                                                username: detail1.username.to_string(),
+                                                name: detail1.name.to_string(),
+                                                email: detail1.email.to_string(),
+                                                address: detail1.address.to_string(),
+                                            },
+                                        )
+                                        .await
+                                        {
+                                            Ok(user_update_response) => {
+                                                user_token
+                                                    .set(Token {
+                                                        token: user_update_response.token,
+                                                        tag: user_update_response.tag,
+                                                        nonce: user_update_response.nonce,
+                                                    })
+                                                    .await;
+                                                Ok(())
+                                            }
+                                            Err(e) => Err(e),
+                                        }
+                                    }
+                                    None => anyhow::bail!("user token not found"),
+                                }
+                            })
+                            .await
+                            .unwrap()
+                        {
+                            Ok(_) => {
+                                let main_window = main_window.unwrap();
+                                main_window.invoke_get_user_detail();
+                            }
+                            Err(e) => {
+                                log::error!("{}", e.to_string());
+                            }
+                        }
+                    })
+                    .unwrap();
+                }
+            });
+
+            user_update_window.set_user_detail(detail);
+
+            user_update_window.show().unwrap();
         }
     });
 
@@ -700,9 +832,26 @@ fn main() -> Result<(), slint::PlatformError> {
                                 }
                                 Err(e) => Err(e),
                             },
-                            1 => {
-                                unimplemented!("search by author");
-                            }
+                            1 => match url_post::<BookAuthorsSearchResponse, BookAuthorsSearchRequest>(
+                                "book/search/authors",
+                                BookAuthorsSearchRequest {
+                                    authors: search_text.to_string(),
+                                },
+                            )
+                            .await
+                            {
+                                Ok(book_list) => {
+                                    let mut book_cover_buffers =
+                                        Vec::with_capacity(book_list.books.len());
+
+                                    for book in book_list.books.iter() {
+                                        book_cover_buffers
+                                            .push(url_get_image_buffer(&book.cover).await.ok());
+                                    }
+                                    Ok((book_list.into(), book_cover_buffers))
+                                }
+                                Err(e) => Err(e),
+                            },
                             2 => {
                                 match url_post::<
                                     BookKeywordsSearchResponse,
@@ -710,10 +859,7 @@ fn main() -> Result<(), slint::PlatformError> {
                                 >(
                                     "book/search/keywords",
                                     BookKeywordsSearchRequest {
-                                        keywords: search_text
-                                            .split_whitespace()
-                                            .map(|s| s.to_string())
-                                            .collect(),
+                                        keywords: search_text.trim().to_string(),
                                     },
                                 )
                                 .await

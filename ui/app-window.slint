@@ -1,4 +1,4 @@
-import { Button, VerticalBox, HorizontalBox, ListView, TabWidget, StandardButton } from "std-widgets.slint";
+import { Button, VerticalBox, HorizontalBox, ListView, TabWidget, StandardButton, LineEdit } from "std-widgets.slint";
 import { SideBar } from "side-bar.slint";
 import { UserView } from "user.slint";
 import { UserDetail } from "user-detail.slint";
@@ -31,8 +31,9 @@ export component MainWindow inherits Window {
     property <int> search-mode: 0;
 
     callback user-login(string, string);
-    callback user-register();
+    callback user-register(string, string);
     callback user-logout();
+    callback user-update(UserDetail);
     callback add-to-cart(int, int);
     callback get-cart-book-list();
     callback update-cart-book(int, int, [BookInCart]);
@@ -98,11 +99,14 @@ export component MainWindow inherits Window {
                     user-login(username, password) => {
                         root.user-login(username, password);
                     }
-                    user-register => {
-                        root.user-register();
+                    user-register(username, password) => {
+                        root.user-register(username, password);
                     }
                     user-logout => {
                         root.user-logout();
+                    }
+                    user-update(user-detail) => {
+                        root.user-update(user-detail);
                     }
                     get-user-detail => {
                         root.get-user-detail();
@@ -197,7 +201,7 @@ export component MainWindow inherits Window {
     }
 }
 
-export component BookDetailWindow inherits Window {
+export component BookDetailWindow inherits Dialog {
     in property <BookInDetail> book;
     in property <length> image-width: 100px;
     in property <float> image-aspect-ratio: 1;
@@ -218,6 +222,101 @@ export component BookDetailWindow inherits Window {
         image-aspect-ratio: root.image-aspect-ratio;
         item-width: root.window-width - 50px;
         preferred-height: root.window-height;
+    }
+}
+
+export component UserDetailUpdateWindow inherits Window {
+    in property <UserDetail> user-detail;
+    in property <length> window-width: 300px;
+    in property <length> window-height: 300px;
+
+    property <UserDetail> new-user-detail;
+    property <string> username;
+    property <string> name;
+    property <string> email;
+    property <string> address;
+
+    changed user-detail => {
+        new-user-detail = user-detail;
+        username = user-detail.username;
+        name = user-detail.name;
+        email = user-detail.email;
+        address = user-detail.address;
+    }
+
+    callback update-user-detail(UserDetail);
+
+    title: "User Detail Update";
+    preferred-width: root.window-width;
+    preferred-height: root.window-height;
+
+    min-width: root.window-width;
+    min-height: root.window-height;
+
+    VerticalBox {
+        alignment: LayoutAlignment.center;
+        HorizontalBox {
+            alignment: LayoutAlignment.center;
+            Text {
+                vertical-alignment: TextVerticalAlignment.center;
+                text: "Username:";
+            }
+
+            LineEdit {
+                text <=> username;
+            }
+        }
+
+        HorizontalBox {
+            alignment: LayoutAlignment.center;
+            Text {
+                vertical-alignment: TextVerticalAlignment.center;
+                text: "Name:";
+            }
+
+            LineEdit {
+                text <=> name;
+            }
+        }
+
+        HorizontalBox {
+            alignment: LayoutAlignment.center;
+            Text {
+                vertical-alignment: TextVerticalAlignment.center;
+                text: "Email:";
+            }
+
+            LineEdit {
+                text <=> email;
+            }
+        }
+
+        HorizontalBox {
+            alignment: LayoutAlignment.center;
+            Text {
+                vertical-alignment: TextVerticalAlignment.center;
+                text: "Address:";
+            }
+
+            LineEdit {
+                text <=> address;
+            }
+        }
+
+        HorizontalBox {
+            alignment: LayoutAlignment.center;
+
+            Button {
+                text: "Update";
+                clicked => {
+                    new-user-detail.username = username;
+                    new-user-detail.name = name;
+                    new-user-detail.email = email;
+                    new-user-detail.address = address;
+                    update-user-detail(new-user-detail);
+                }
+            }
+        }
     }
 }
 
