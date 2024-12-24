@@ -220,3 +220,53 @@ pub async fn user_logout(
         Err(e) => HttpResponse::BadGateway().json(e.to_string()),
     }
 }
+
+#[derive(Debug, Deserialize)]
+struct UserUpdateRequest {
+    token: String,
+    tag: String,
+    nonce: String,
+    username: String,
+    name: String,
+    email: String,
+    address: String,
+}
+
+#[derive(Debug, Serialize)]
+struct UserUpdateResponse {
+    token: String,
+    tag: String,
+    nonce: String,
+}
+
+#[post("/user/update")]
+pub async fn user_update(
+    pool: web::Data<Pool>,
+    user_update_request: web::Json<UserUpdateRequest>,
+) -> impl Responder {
+    let request = user_update_request.into_inner();
+    let token = &Token {
+        token: request.token,
+        tag: request.tag,
+        nonce: request.nonce,
+    };
+    let username = &request.username;
+    let name = &request.name;
+    let email = &request.email;
+    let address = &request.address;
+    match pool.get_conn().await {
+        Ok(mut conn) => {
+            match UserService::update_user_profile(&mut conn, token, username, name, email, address)
+                .await
+            {
+                Ok(token) => HttpResponse::Ok().json(UserUpdateResponse {
+                    token: token.token,
+                    tag: token.tag,
+                    nonce: token.nonce,
+                }),
+                Err(e) => HttpResponse::BadRequest().json(e.to_string()),
+            }
+        }
+        Err(e) => HttpResponse::BadGateway().json(e.to_string()),
+    }
+}

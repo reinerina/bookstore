@@ -945,4 +945,123 @@ ORDER BY
         let keyword_id = query.with(()).first::<u32, &mut Conn>(conn).await?;
         Ok(keyword_id)
     }
+
+    pub async fn get_author_list(conn: &mut Conn) -> anyhow::Result<Vec<Author>> {
+        let query = r"SELECT author_id,name FROM authors;";
+        let result = query
+            .with(())
+            .map(conn, |(author_id, name)| Author {
+                id: author_id,
+                name,
+            })
+            .await?;
+        Ok(result)
+    }
+
+    pub async fn add_author(conn: &mut Conn, name: &str) -> anyhow::Result<Option<u32>> {
+        let query = r"INSERT INTO authors(name) VALUES(:name);";
+        let params = params! {
+            "name" => name,
+        };
+        query.with(params).run(&mut *conn).await?;
+        let query = r"SELECT LAST_INSERT_ID() as author_id;";
+        let author_id = query.with(()).first::<u32, &mut Conn>(conn).await?;
+        Ok(author_id)
+    }
+
+    pub async fn get_publisher_list(conn: &mut Conn) -> anyhow::Result<Vec<Publisher>> {
+        let query = r"SELECT publisher_id,name FROM publishers;";
+        let result = query
+            .with(())
+            .map(conn, |(publisher_id, name)| Publisher {
+                id: publisher_id,
+                name,
+            })
+            .await?;
+        Ok(result)
+    }
+
+    pub async fn get_publisher(
+        conn: &mut Conn,
+        publisher_id: u32,
+    ) -> anyhow::Result<Option<Publisher>> {
+        let query = r"SELECT publisher_id,name FROM publishers WHERE publisher_id=:publisher_id;";
+        let params = params! {
+            "publisher_id" => publisher_id,
+        };
+        let mut result = query
+            .with(params)
+            .map(conn, |(publisher_id, name)| Publisher {
+                id: publisher_id,
+                name,
+            })
+            .await?;
+        Ok(result.pop())
+    }
+
+    pub async fn add_publisher(conn: &mut Conn, name: &str) -> anyhow::Result<Option<u32>> {
+        let query = r"INSERT INTO publishers(name) VALUES(:name);";
+        let params = params! {
+            "name" => name,
+        };
+        query.with(params).run(&mut *conn).await?;
+        let query = r"SELECT LAST_INSERT_ID() as publisher_id;";
+        let publisher_id = query.with(()).first::<u32, &mut Conn>(conn).await?;
+        Ok(publisher_id)
+    }
+
+    pub async fn update_book(
+        conn: &mut Conn,
+        book_id: u32,
+        isbn: &str,
+        title: &str,
+        authors: &Vec<u32>,
+        keywords: &Vec<u32>,
+        publisher: u32,
+        price: BigDecimal,
+        catalog: &str,
+        cover: &str,
+        is_onstore: bool,
+    ) -> anyhow::Result<Option<u32>> {
+        let query = r"UPDATE books SET isbn=:isbn,title=:title,publisher_id=:publisher_id,price=:price,catalog=:catalog,cover=:cover,is_onstore=:is_onstore WHERE book_id=:book_id;";
+        let params = params! {
+            "isbn" => isbn,
+            "title" => title,
+            "publisher_id" => publisher,
+            "price" => price,
+            "catalog" => catalog,
+            "cover" => cover,
+            "is_onstore" => is_onstore,
+            "book_id" => book_id,
+        };
+        query.with(params).run(&mut *conn).await?;
+        let query = r"DELETE FROM book_authors WHERE book_id=:book_id;";
+        let params = params! {
+            "book_id" => book_id,
+        };
+        query.with(params).run(&mut *conn).await?;
+        let query = r"DELETE FROM book_keywords WHERE book_id=:book_id;";
+        let params = params! {
+            "book_id" => book_id,
+        };
+        query.with(params).run(&mut *conn).await?;
+        for author in authors {
+            let query = r"INSERT INTO book_authors(book_id,author_id) VALUES(:book_id,:author_id);";
+            let params = params! {
+                "book_id" => book_id,
+                "author_id" => author,
+            };
+            query.with(params).run(&mut *conn).await?;
+        }
+        for keyword in keywords {
+            let query =
+                r"INSERT INTO book_keywords(book_id,keyword_id) VALUES(:book_id,:keyword_id);";
+            let params = params! {
+                "book_id" => book_id,
+                "keyword_id" => keyword,
+            };
+            query.with(params).run(&mut *conn).await?;
+        }
+        Ok(Some(book_id))
+    }
 }

@@ -142,23 +142,26 @@ WHERE
                 &mut *conn,
                 |(catalog_id, supplier_id, book_id, price, available_quantity)| {
                     let book_id: u32 = book_id;
+                    let supplier_id: u32 = supplier_id;
                     (
                         SupplierCatalog {
                             id: catalog_id,
-                            supplier_id,
                             price,
                             available_quantity,
                             ..Default::default()
                         },
                         book_id,
+                        supplier_id,
                     )
                 },
             )
             .await?;
         let mut res = Vec::with_capacity(result.len());
-        for (mut catalog, book_id) in result.into_iter() {
+        for (mut catalog, book_id, supplier_id) in result.into_iter() {
             let book = BookRepo::get_book_detail(conn, book_id).await?;
+            let supplier = SupplierRepo::get_supplier(conn, supplier_id).await?;
             catalog.book = book.unwrap();
+            catalog.supplier = supplier.unwrap();
             res.push(catalog);
         }
         Ok(res)
@@ -181,23 +184,26 @@ WHERE
                 &mut *conn,
                 |(catalog_id, supplier_id, book_id, price, available_quantity)| {
                     let book_id: u32 = book_id;
+                    let supplier_id: u32 = supplier_id;
                     (
                         SupplierCatalog {
                             id: catalog_id,
-                            supplier_id,
                             price,
                             available_quantity,
                             ..Default::default()
                         },
                         book_id,
+                        supplier_id,
                     )
                 },
             )
             .await?;
         match result.pop() {
-            Some((mut catalog, book_id)) => {
+            Some((mut catalog, book_id, supplier_id)) => {
                 let book = BookRepo::get_book_detail(conn, book_id).await?;
+                let supplier = SupplierRepo::get_supplier(conn, supplier_id).await?;
                 catalog.book = book.unwrap();
+                catalog.supplier = supplier.unwrap();
                 Ok(Some(catalog))
             }
             None => Ok(None),
@@ -235,23 +241,26 @@ WHERE
                 &mut *conn,
                 |(catalog_id, supplier_id, book_id, price, available_quantity)| {
                     let book_id: u32 = book_id;
+                    let supplier_id: u32 = supplier_id;
                     (
                         SupplierCatalog {
                             id: catalog_id,
-                            supplier_id,
                             price,
                             available_quantity,
                             ..Default::default()
                         },
                         book_id,
+                        supplier_id,
                     )
                 },
             )
             .await?;
         let mut res = Vec::with_capacity(result.len());
-        for (mut catalog, book_id) in result.into_iter() {
+        for (mut catalog, book_id, supplier_id) in result.into_iter() {
             let book = BookRepo::get_book_detail(conn, book_id).await?;
+            let supplier = SupplierRepo::get_supplier(conn, supplier_id).await?;
             catalog.book = book.unwrap();
+            catalog.supplier = supplier.unwrap();
             res.push(catalog);
         }
         Ok(res)
@@ -272,23 +281,26 @@ WHERE
                 &mut *conn,
                 |(catalog_id, supplier_id, book_id, price, available_quantity)| {
                     let book_id: u32 = book_id;
+                    let supplier_id: u32 = supplier_id;
                     (
                         SupplierCatalog {
                             id: catalog_id,
-                            supplier_id,
                             price,
                             available_quantity,
                             ..Default::default()
                         },
                         book_id,
+                        supplier_id,
                     )
                 },
             )
             .await?;
         let mut res = Vec::with_capacity(result.len());
-        for (mut catalog, book_id) in result.into_iter() {
+        for (mut catalog, book_id, supplier_id) in result.into_iter() {
             let book = BookRepo::get_book_detail(conn, book_id).await?;
+            let supplier = SupplierRepo::get_supplier(conn, supplier_id).await?;
             catalog.book = book.unwrap();
+            catalog.supplier = supplier.unwrap();
             res.push(catalog);
         }
         Ok(res)

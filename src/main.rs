@@ -1,8 +1,9 @@
 use actix_web::{get, web, App, HttpResponse, HttpServer};
 use bookstore::controller::{
     admin_login, admin_register, book_authors_search, book_detail, book_keywords_search, book_list,
-    book_title_search, credit_rule, login, order_create, order_detail, order_history, register,
-    supplier_profile, user_detail, user_logout,
+    book_title_search, credit_rule, login, order_create, order_detail, order_history,
+    purchase_order_detail, purchase_order_list, register, supplier_profile, user_detail,
+    user_logout, user_update,
 };
 use mysql_async::prelude::{Query, WithParams};
 use mysql_async::{OptsBuilder, Pool};
@@ -77,6 +78,7 @@ async fn main() -> std::io::Result<()> {
             .service(login)
             .service(user_detail)
             .service(user_profile)
+            .service(user_update)
             .service(user_logout)
             .service(supplier_profile)
             .service(credit_rule)
@@ -88,6 +90,8 @@ async fn main() -> std::io::Result<()> {
             .service(order_detail)
             .service(order_history)
             .service(order_create)
+            .service(purchase_order_list)
+            .service(purchase_order_detail)
     });
     server.bind(("127.0.0.1", 8080))?.run().await?;
 

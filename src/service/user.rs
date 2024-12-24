@@ -39,6 +39,21 @@ impl UserService {
         }
     }
 
+    pub async fn update_user_profile(
+        conn: &mut Conn,
+        token: &Token,
+        username: &str,
+        name: &str,
+        email: &str,
+        address: &str,
+    ) -> anyhow::Result<Token> {
+        let (customer_id, _) = AuthService::verify_user(conn, token).await?;
+        UserRepo::update_user_profile(conn, customer_id, username, name, address, email).await?;
+        let token = generate_token(username).await?;
+        AuthRepo::update_auth_record(conn, customer_id, &token.token, true).await?;
+        Ok(token)
+    }
+
     pub async fn get_user_detail(conn: &mut Conn, token: &Token) -> anyhow::Result<Customer> {
         let (_, username) = AuthService::verify_user(conn, token).await?;
 

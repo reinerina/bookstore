@@ -144,4 +144,24 @@ impl UserRepo {
             .await?;
         Ok(result.pop())
     }
+
+    pub async fn update_user_profile(
+        conn: &mut Conn,
+        customer_id: u32,
+        new_username: &str,
+        name: &str,
+        address: &str,
+        email: &str,
+    ) -> anyhow::Result<()> {
+        let query = r"UPDATE customers SET name=:name,address=:address,email=:email,username=:new_username WHERE customer_id=:customer_id;";
+        let params = params! {
+            "name" => name,
+            "address" => address,
+            "email" => email,
+            "customer_id" => customer_id,
+            "new_username" => new_username,
+        };
+        query.with(params).run(&mut *conn).await?;
+        Ok(())
+    }
 }

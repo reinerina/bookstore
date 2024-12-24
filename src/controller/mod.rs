@@ -13,6 +13,7 @@ pub use book::{
 };
 pub use index::homepage;
 pub use order::{order_create, order_detail, order_history};
+pub use purchase_order::{purchase_order_detail, purchase_order_list};
 pub use shortage::shortage_create;
 pub use supplier::supplier_profile;
-pub use user::{credit_rule, login, register, user_detail, user_logout, user_profile};
+pub use user::{credit_rule, login, register, user_detail, user_logout, user_profile, user_update};

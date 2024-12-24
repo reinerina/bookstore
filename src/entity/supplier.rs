@@ -5,7 +5,7 @@ use mysql_common::time::PrimitiveDateTime;
 #[derive(Debug, Default)]
 pub struct SupplierCatalog {
     pub id: u32,
-    pub supplier_id: u32,
+    pub supplier: Supplier,
     pub book: Book,
     pub available_quantity: u32,
     pub price: BigDecimal,
