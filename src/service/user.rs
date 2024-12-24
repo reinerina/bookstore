@@ -1,6 +1,6 @@
-use crate::entity::{CreditRule, Customer};
+use crate::entity::{AdminRole, CreditRule, Customer, UserStatus};
 use crate::repo::{AuthRepo, UserRepo};
-use crate::service::AuthService;
+use crate::service::{AdminService, AuthService};
 use crate::utils::{encrypt_password, generate_token, validate_token, Token};
 use mysql_async::Conn;
 
@@ -87,6 +87,36 @@ impl UserService {
         match UserRepo::get_credit_rule(conn, credit_level).await? {
             Some(credit_rule) => Ok(credit_rule),
             None => anyhow::bail!("credit rule {} not found", credit_level),
+        }
+    }
+
+    pub async fn update_user_credit_level(
+        conn: &mut Conn,
+        token: &Token,
+        customer_id: u32,
+        credit_level: u32,
+    ) -> anyhow::Result<()> {
+        match AdminService::verify_admin(conn, token, AdminRole::Admin).await? {
+            (_, _, true) => {
+                UserRepo::update_user_credit_level(conn, customer_id, credit_level).await?;
+                Ok(())
+            }
+            (_, _, false) => anyhow::bail!("permission denied: only admin can update credit level"),
+        }
+    }
+
+    pub async fn update_user_status(
+        conn: &mut Conn,
+        token: &Token,
+        customer_id: u32,
+        status: UserStatus,
+    ) -> anyhow::Result<()> {
+        match AdminService::verify_admin(conn, token, AdminRole::Admin).await? {
+            (_, _, true) => {
+                UserRepo::update_user_status(conn, customer_id, status).await?;
+                Ok(())
+            }
+            (_, _, false) => anyhow::bail!("permission denied: only admin can update user status"),
         }
     }
 

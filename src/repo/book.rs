@@ -42,7 +42,7 @@ FROM
 	LEFT JOIN book_suppliers ON book_suppliers.book_id = books.book_id
 	LEFT JOIN suppliers ON book_suppliers.supplier_id = suppliers.supplier_id
 	LEFT JOIN book_keywords ON book_keywords.book_id = books.book_id
-	LEFT JOIN keywords ON keywords.keyword_id = keywords.keyword_id
+	LEFT JOIN keywords ON book_keywords.keyword_id = keywords.keyword_id
 	LEFT JOIN series_books ON series_books.book_id = books.book_id
 	LEFT JOIN series ON series_books.series_id = series.series_id
 WHERE
@@ -215,13 +215,13 @@ books.cover,
 books.is_onstore
 FROM
 	books
-	LEFT JOIN publishers ON publishers.publisher_id = books.book_id
+	LEFT JOIN publishers ON publishers.publisher_id = books.publisher_id
 	LEFT JOIN book_authors ON book_authors.book_id = books.book_id
 	LEFT JOIN `authors` ON `authors`.author_id = book_authors.author_id
 	LEFT JOIN book_suppliers ON book_suppliers.book_id = books.book_id
 	LEFT JOIN suppliers ON book_suppliers.supplier_id = suppliers.supplier_id
 	LEFT JOIN book_keywords ON book_keywords.book_id = books.book_id
-	LEFT JOIN keywords ON keywords.keyword_id = keywords.keyword_id
+	LEFT JOIN keywords ON book_keywords.keyword_id = keywords.keyword_id
 	LEFT JOIN series_books ON series_books.book_id = books.book_id
 	LEFT JOIN series ON series_books.series_id = series.series_id
 GROUP BY books.book_id;";
@@ -375,13 +375,13 @@ books.cover,
 books.is_onstore
 FROM
 	books
-	LEFT JOIN publishers ON publishers.publisher_id = books.book_id
+	LEFT JOIN publishers ON publishers.publisher_id = books.publisher_id
 	LEFT JOIN book_authors ON book_authors.book_id = books.book_id
 	LEFT JOIN `authors` ON `authors`.author_id = book_authors.author_id
 	LEFT JOIN book_suppliers ON book_suppliers.book_id = books.book_id
 	LEFT JOIN suppliers ON book_suppliers.supplier_id = suppliers.supplier_id
 	LEFT JOIN book_keywords ON book_keywords.book_id = books.book_id
-	LEFT JOIN keywords ON keywords.keyword_id = keywords.keyword_id
+	LEFT JOIN keywords ON book_keywords.keyword_id = keywords.keyword_id
 	LEFT JOIN series_books ON series_books.book_id = books.book_id
 	LEFT JOIN series ON series_books.series_id = series.series_id
 WHERE
@@ -546,13 +546,13 @@ books.cover,
 books.is_onstore
 FROM
 	books
-	LEFT JOIN publishers ON publishers.publisher_id = books.book_id
+	LEFT JOIN publishers ON publishers.publisher_id = books.publisher_id
 	LEFT JOIN book_authors ON book_authors.book_id = books.book_id
 	LEFT JOIN `authors` ON `authors`.author_id = book_authors.author_id
 	LEFT JOIN book_suppliers ON book_suppliers.book_id = books.book_id
 	LEFT JOIN suppliers ON book_suppliers.supplier_id = suppliers.supplier_id
 	LEFT JOIN book_keywords ON book_keywords.book_id = books.book_id
-	LEFT JOIN keywords ON keywords.keyword_id = keywords.keyword_id
+	LEFT JOIN keywords ON book_keywords.keyword_id = keywords.keyword_id
 	LEFT JOIN series_books ON series_books.book_id = books.book_id
 	LEFT JOIN series ON series_books.series_id = series.series_id
 WHERE
@@ -717,13 +717,13 @@ books.cover,
 books.is_onstore
 FROM
 	books
-	LEFT JOIN publishers ON publishers.publisher_id = books.book_id
+	LEFT JOIN publishers ON publishers.publisher_id = books.publisher_id
 	LEFT JOIN book_authors ON book_authors.book_id = books.book_id
 	LEFT JOIN `authors` ON `authors`.author_id = book_authors.author_id
 	LEFT JOIN book_suppliers ON book_suppliers.book_id = books.book_id
 	LEFT JOIN suppliers ON book_suppliers.supplier_id = suppliers.supplier_id
 	LEFT JOIN book_keywords ON book_keywords.book_id = books.book_id
-	LEFT JOIN keywords ON keywords.keyword_id = keywords.keyword_id
+	LEFT JOIN keywords ON book_keywords.keyword_id = keywords.keyword_id
 	LEFT JOIN series_books ON series_books.book_id = books.book_id
 	LEFT JOIN series ON series_books.series_id = series.series_id
 WHERE

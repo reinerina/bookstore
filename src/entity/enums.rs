@@ -272,3 +272,41 @@ impl Display for AdminRole {
         write!(f, "{}", str)
     }
 }
+
+#[derive(Eq, PartialEq, Debug, Default)]
+pub enum UserStatus {
+    #[default]
+    Active,
+    Cancelled,
+    Banned,
+}
+
+impl UserStatus {
+    pub fn new(status: &str) -> UserStatus {
+        match status {
+            "active" => UserStatus::Active,
+            "cancelled" => UserStatus::Cancelled,
+            "banned" => UserStatus::Banned,
+            _ => UserStatus::Active,
+        }
+    }
+}
+
+impl FromStr for UserStatus {
+    type Err = anyhow::Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(UserStatus::new(s))
+    }
+}
+
+impl Display for UserStatus {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let str = match self {
+            UserStatus::Active => "active",
+            UserStatus::Cancelled => "cancelled",
+            UserStatus::Banned => "banned",
+        };
+        write!(f, "{}", str)
+    }
+}

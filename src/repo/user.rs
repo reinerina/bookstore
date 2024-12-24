@@ -1,4 +1,4 @@
-use crate::entity::{CreditRule, Customer};
+use crate::entity::{CreditRule, Customer, UserStatus};
 use mysql_async::prelude::{Query, WithParams};
 use mysql_async::{params, Conn};
 
@@ -160,6 +160,99 @@ impl UserRepo {
             "email" => email,
             "customer_id" => customer_id,
             "new_username" => new_username,
+        };
+        query.with(params).run(&mut *conn).await?;
+        Ok(())
+    }
+
+    pub async fn search_username_natural(
+        conn: &mut Conn,
+        username: &str,
+    ) -> anyhow::Result<Vec<Customer>> {
+        let query = r"SELECT customer_id,username,pwd,name,address,email,
+        account_balance,credit_level,
+        total_purchase,overdraft_limit,status
+        FROM customers WHERE MATCH(username) AGAINST(:username IN NATURAL LANGUAGE MODE);";
+        let params = params! {
+            "username" => username,
+        };
+        let result = query
+            .with(params)
+            .map(
+                conn,
+                |(
+                    customer_id,
+                    username,
+                    pwd,
+                    name,
+                    address,
+                    email,
+                    account_balance,
+                    credit_level,
+                    total_purchase,
+                    overdraft_limit,
+                    status,
+                )| {
+                    Customer {
+                        id: customer_id,
+                        username,
+                        password: pwd,
+                        name,
+                        address,
+                        email,
+                        account_balance,
+                        credit_level,
+                        total_purchase,
+                        overdraft_limit,
+                        status: {
+                            let status: String = status;
+                            status.parse().unwrap()
+                        },
+                    }
+                },
+            )
+            .await?;
+        Ok(result)
+    }
+
+    pub async fn update_user_credit_level(
+        conn: &mut Conn,
+        customer_id: u32,
+        credit_level: u32,
+    ) -> anyhow::Result<()> {
+        let query =
+            r"UPDATE customers SET credit_level=:credit_level WHERE customer_id=:customer_id;";
+        let params = params! {
+            "credit_level" => credit_level,
+            "customer_id" => customer_id,
+        };
+        query.with(params).run(&mut *conn).await?;
+        Ok(())
+    }
+
+    pub async fn update_user_status(
+        conn: &mut Conn,
+        customer_id: u32,
+        status: UserStatus,
+    ) -> anyhow::Result<()> {
+        let query = r"UPDATE customers SET status=:status WHERE customer_id=:customer_id;";
+        let params = params! {
+            "status" => status.to_string(),
+            "customer_id" => customer_id,
+        };
+        query.with(params).run(&mut *conn).await?;
+        Ok(())
+    }
+
+    pub async fn update_user_password(
+        conn: &mut Conn,
+        customer_id: u32,
+        password: &str,
+    ) -> anyhow::Result<()> {
+        let query = r"UPDATE customers SET pwd=:password WHERE customer_id=:customer_id;";
+        let params = params! {
+            "password" => password,
+            "customer_id" => customer_id,
         };
         query.with(params).run(&mut *conn).await?;
         Ok(())

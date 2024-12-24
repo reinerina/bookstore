@@ -22,7 +22,7 @@ pub use book::Book;
 pub use customer::{CreditRule, Customer};
 pub use enums::{
     AdminRole, AdminStatus, CustomerStatus, OrderPaymentStatus, OrderShippingStatus,
-    PriceInquiryStatus, PurchaseOrderStatus,
+    PriceInquiryStatus, PurchaseOrderStatus, UserStatus,
 };
 pub use keyword::Keyword;
 pub use location::Location;
