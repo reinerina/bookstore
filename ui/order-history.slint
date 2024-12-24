@@ -47,35 +47,41 @@ component OrderHistoryItem inherits Rectangle {
 
                 HorizontalLayout {
                     alignment: LayoutAlignment.start;
-                    Text {
-                        text: "Order Date: " + root.order.order_date;
-                    }
+                    VerticalBox {
+                        alignment: LayoutAlignment.start;
+                        Text {
+                            text: "Order Date: " + root.order.order_date;
+                        }
 
-                    Text {
-                        text: "Total Price: " + root.order.total_price;
-                    }
+                        Text {
+                            text: "Total Price: " + root.order.total_price;
+                        }
 
-                    Text {
-                        text: "Payment Status: " + root.order.payment_status;
-                    }
+                        Text {
+                            text: "Payment Status: " + root.order.payment_status;
+                        }
 
-                    Text {
-                        text: "Shipping Status: " + root.order.shipping_status;
+                        Text {
+                            text: "Shipping Status: " + root.order.shipping_status;
+                        }
                     }
                 }
 
                 HorizontalLayout {
                     alignment: LayoutAlignment.start;
-                    Text {
-                        text: "Discount Percentage: " + root.order.discount_percentage;
-                    }
+                    VerticalBox {
+                        alignment: LayoutAlignment.start;
+                        Text {
+                            text: "Discount Percentage: " + root.order.discount_percentage;
+                        }
 
-                    Text {
-                        text: "Discount Amount: " + root.order.discount_amount;
-                    }
+                        Text {
+                            text: "Discount Amount: " + root.order.discount_amount;
+                        }
 
-                    Text {
-                        text: "Original Price: " + root.order.original_price;
+                        Text {
+                            text: "Original Price: " + root.order.original_price;
+                        }
                     }
                 }
             }
@@ -124,6 +130,8 @@ export component OrderHistoryView inherits Window {
     in property <length> window-width: 800px;
     in property <length> window-height: 600px;
 
+    callback open-order-detail(int);
+
     VerticalBox {
         alignment: LayoutAlignment.start;
         ListView {
@@ -132,6 +140,10 @@ export component OrderHistoryView inherits Window {
             for order[index] in root.orders: OrderHistoryItem {
                 order: orders[index];
                 item-width: root.item-width;
+
+                clicked => {
+                    root.open-order-detail(order.id);
+                }
             }
         }
     }

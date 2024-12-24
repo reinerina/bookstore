@@ -1,0 +1,183 @@
+import { Button, VerticalBox, HorizontalBox, ListView, Palette, SpinBox } from "std-widgets.slint";
+
+export struct BookInOrderDetail {
+    id: int,
+    title: string,
+    publisher: string,
+    cover: image,
+    price: string,
+    quantity: int,
+    total_price: string,
+}
+
+export struct OrderDetail {
+    id: int,
+    discount_percentage: string,
+    discount_amount: string,
+    original_price: string,
+    total_price: string,
+    order_date: string,
+    payment_status: string,
+    shipping_status: string,
+    shipping_address: string,
+    books: [BookInOrderDetail], 
+}
+
+component OrderDetailItem inherits Rectangle {
+    in property <BookInOrderDetail> book;
+    in property <length> image-width;
+    in property <float> image-aspect-ratio;
+    in property <length> item-width;
+
+    VerticalLayout {
+        alignment: LayoutAlignment.start;
+        Rectangle {
+            touch := TouchArea {
+                width: 100%;
+                height: 100%;
+            }
+
+            HorizontalLayout {
+                alignment: LayoutAlignment.start;
+                Image {
+                    width: root.image-width;
+                    height: root.image-width / root.image-aspect-ratio;
+                    source: root.book.cover;
+                }
+
+                Rectangle {
+                    width: root.item-width - root.image-width;
+                    state := Rectangle {
+                        opacity: 0;
+                        background: Colors.gray;
+
+                        animate opacity { duration: 150ms; }
+                    }
+
+                    VerticalBox {
+                        alignment: LayoutAlignment.start;
+                        Text {
+                            text: root.book.title;
+                        }
+
+                        Text {
+                            text: root.book.publisher;
+                        }
+
+                        Text {
+                            text: root.book.price;
+                        }
+
+                        Text {
+                            text: "Quantity: " + root.book.quantity;
+                        }
+
+                        Text {
+                            text: "Total Price: " + root.book.total_price;
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+export component OrderDetailView inherits Window {
+    in property <OrderDetail> order;
+    in property <length> image-width: 100px;
+    in property <float> image-aspect-ratio: 1.5;
+    in property <length> item-width: 300px;
+    in property <length> window-width: 800px;
+    in property <length> window-height: 600px;
+
+    VerticalBox {
+        alignment: LayoutAlignment.start;
+        HorizontalBox {
+            alignment: LayoutAlignment.start;
+            VerticalLayout {
+                ListView {
+                    preferred-height: root.height - 216px;
+                    preferred-width: root.width;
+                    for book[index] in order.books: OrderDetailItem {
+                        book: root.order.books[index];
+                        image-width: root.image-width;
+                        image-aspect-ratio: root.image-aspect-ratio;
+                        item-width: root.item-width;
+                    }
+                }
+
+                HorizontalBox {
+                    alignment: LayoutAlignment.end;
+                    padding-top: 8px;
+                    padding-bottom: 8px;
+                    Text {
+                        text: "Order Date: " + root.order.order_date;
+                    }
+                }
+
+                HorizontalBox {
+                    alignment: LayoutAlignment.end;
+                    padding-top: 8px;
+                    padding-bottom: 8px;
+                    Text {
+                        text: "Original Price: " + root.order.original_price;
+                    }
+                }
+
+                HorizontalBox {
+                    alignment: LayoutAlignment.end;
+                    padding-top: 8px;
+                    padding-bottom: 8px;
+                    Text {
+                        text: "Discount Percentage: " + root.order.discount_percentage;
+                    }
+                }
+
+                HorizontalBox {
+                    alignment: LayoutAlignment.end;
+                    padding-top: 8px;
+                    padding-bottom: 8px;
+                    Text {
+                        text: "Discount Amount: " + root.order.discount_amount;
+                    }
+                }
+
+                HorizontalBox {
+                    alignment: LayoutAlignment.end;
+                    padding-top: 8px;
+                    padding-bottom: 8px;
+                    Text {
+                        text: "Total Price: " + root.order.total_price;
+                    }
+                }
+
+                HorizontalBox {
+                    alignment: LayoutAlignment.end;
+                    padding-top: 8px;
+                    padding-bottom: 8px;
+                    Text {
+                        text: "Payment Status: " + root.order.payment_status;
+                    }
+                }
+
+                HorizontalBox {
+                    alignment: LayoutAlignment.end;
+                    padding-top: 8px;
+                    padding-bottom: 8px;
+                    Text {
+                        text: "Shipping Status: " + root.order.shipping_status;
+                    }
+                }
+
+                HorizontalBox {
+                    alignment: LayoutAlignment.end;
+                    padding-top: 8px;
+                    padding-bottom: 8px;
+                    Text {
+                        text: "Shipping Address: " + root.order.shipping_address;
+                    }
+                }
+            }
+        }
+    }
+}

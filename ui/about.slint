@@ -1,0 +1,13 @@
+import { AboutSlint, VerticalBox, HorizontalBox } from "std-widgets.slint";
+
+export component AboutView inherits Window {
+    VerticalBox {
+        alignment: LayoutAlignment.start;
+        HorizontalBox {
+            alignment: LayoutAlignment.start;
+            AboutSlint {
+                width: 150px;
+            }
+        }
+    }
+}

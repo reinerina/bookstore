@@ -455,3 +455,28 @@ impl Into<BookListResponse> for BookAuthorsSearchResponse {
         }
     }
 }
+
+#[derive(Debug, Deserialize)]
+pub struct OrderItemResponse {
+    pub book_id: u32,
+    pub title: String,
+    pub publisher: PublisherDetailResponse,
+    pub cover: String,
+    pub price: String,
+    pub quantity: u32,
+    pub total_price: String,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct OrderDetailResponse {
+    pub order_id: u32,
+    pub discount_percentage: String,
+    pub discount_amount: String,
+    pub original_price: String,
+    pub total_price: String,
+    pub order_date: String,
+    pub payment_status: String,
+    pub shipping_status: String,
+    pub shipping_address: String,
+    pub items: Vec<OrderItemResponse>,
+}

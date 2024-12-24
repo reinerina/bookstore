@@ -73,3 +73,10 @@ pub struct BookKeywordsSearchRequest {
 pub struct BookAuthorsSearchRequest {
     pub authors: String,
 }
+
+#[derive(Serialize, Debug, Default)]
+pub struct OrderDetailRequest {
+    pub token: String,
+    pub tag: String,
+    pub nonce: String,
+}

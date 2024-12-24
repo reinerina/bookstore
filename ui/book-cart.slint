@@ -33,6 +33,7 @@ component BookInCartItem inherits Rectangle {
 
     VerticalLayout {
         alignment: LayoutAlignment.start;
+        width: root.item-width;
         Rectangle {
             touch := TouchArea {
                 width: 100%;
@@ -162,6 +163,7 @@ export component BookCartView inherits Window {
 
         HorizontalLayout {
             alignment: LayoutAlignment.end;
+            width: root.item-width;
             padding-top: 8px;
             padding-bottom: 8px;
             checkout-button := Button {

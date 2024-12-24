@@ -7,6 +7,8 @@ import { BookCartView, BookInCart } from "book-cart.slint";
 import { OrderHistoryView, OrderHistory } from "order-history.slint";
 import { BookDetailView, BookInDetail } from "book-detail.slint";
 import { BookSearchView, BookInSearch } from "search-book.slint";
+import { BookInOrderDetail, OrderDetail, OrderDetailView } from "order-detail.slint";
+import { AboutView } from "about.slint";
 
 export component MainWindow inherits Window {
 
@@ -41,6 +43,7 @@ export component MainWindow inherits Window {
     callback checkout();
     callback get-order-history-list();
     callback open-book-detail(int);
+    callback open-order-detail(int);
 
     callback get-book-list();
     callback get-search-book-list(string, int);
@@ -67,7 +70,7 @@ export component MainWindow inherits Window {
 
         VerticalLayout {
             alignment: LayoutAlignment.start;
-            VerticalLayout {
+            top-button := VerticalLayout {
                 alignment: LayoutAlignment.start;
                 padding-top: 8px;
                 padding-left: 8px;
@@ -85,6 +88,8 @@ export component MainWindow inherits Window {
             VerticalBox {
                 alignment: LayoutAlignment.center;
                 if (side-bar.current-item == 0):user-view := UserView {
+                    width: root.width - side-bar.width;
+                    height: 100%;
                     error-login: root.error-login;
                     error-logout: root.error-logout;
                     has-login: root.has-login;
@@ -119,6 +124,8 @@ export component MainWindow inherits Window {
                         root.get-book-list();
                     }
 
+                    width: root.width - side-bar.width;
+                    height: 100%;
                     books: root.books;
                     has-login: root.has-login;
                     image-width: 150px;
@@ -141,9 +148,13 @@ export component MainWindow inherits Window {
                 if (side-bar.current-item == 2):book-cart-view := BookCartView {
 
                     init => {
-                        root.get-cart-book-list();
+                        if (root.has-login) {
+                            root.get-cart-book-list();
+                        }
                     }
 
+                    width: root.width - side-bar.width;
+                    height: 100%;
                     books: root.books-in-cart;
                     image-width: 150px;
                     image-aspect-ratio: 1;
@@ -167,17 +178,27 @@ export component MainWindow inherits Window {
                 if (side-bar.current-item == 3):order-history-view := OrderHistoryView {
 
                     init => {
-                        root.get-order-history-list();
+                        if (root.has-login) {
+                            root.get-order-history-list();
+                        }
                     }
 
+                    width: root.width - side-bar.width;
+                    height: 100%;
                     orders: root.orders;
                     window-width: root.width - side-bar.width - 50px;
                     window-height: root.height;
                     item-width: root.width - side-bar.width - 50px;
+
+                    open-order-detail(id) => {
+                        root.open-order-detail(id);
+                    }
                 }
 
                 if (side-bar.current-item == 4):book-search-view := BookSearchView {
 
+                    width: root.width - side-bar.width;
+                    height: 100%;
                     books: root.books-in-search;
                     image-width: 150px;
                     image-aspect-ratio: 1;
@@ -196,18 +217,23 @@ export component MainWindow inherits Window {
                         root.get-search-book-list(keyword, mode);
                     }
                 }
+
+                if (side-bar.current-item == 5):about-view := AboutView {
+                    width: root.width - side-bar.width;
+                    height: 100%;
+                }
             }
         }
     }
 }
 
-export component BookDetailWindow inherits Dialog {
+export component BookDetailWindow inherits Window {
     in property <BookInDetail> book;
     in property <length> image-width: 100px;
     in property <float> image-aspect-ratio: 1;
     in property <length> item-width: 600px;
-    in property <length> window-width: 600px;
-    in property <length> window-height: 238px;
+    property <length> window-width: 600px;
+    property <length> window-height: 238px;
 
     title: "Book \{book.title} Detail";
     preferred-width: root.window-width;
@@ -218,6 +244,8 @@ export component BookDetailWindow inherits Dialog {
 
     book-detail := BookDetailView {
         book: book;
+        width: root.width;
+        height: root.height;
         image-width: root.image-width;
         image-aspect-ratio: root.image-aspect-ratio;
         item-width: root.window-width - 50px;
@@ -317,6 +345,33 @@ export component UserDetailUpdateWindow inherits Window {
                 }
             }
         }
+    }
+}
+
+export component OrderDetailWindow inherits Window {
+    in property <OrderDetail> order;
+    in property <length> item-width: 600px;
+    in property <length> image-width: 100px;
+    in property <float> image-aspect-ratio: 1.5;
+    property <length> window-width: 800px;
+    property <length> window-height: 600px;
+
+    title: "Order Detail";
+    preferred-width: root.window-width;
+    preferred-height: root.window-height;
+
+    min-width: root.window-width;
+    min-height: root.window-height;
+
+    OrderDetailView {
+        order: order;
+        width: root.width;
+        height: root.height;
+        image-width: image-width;
+        image-aspect-ratio: image-aspect-ratio;
+        item-width: root.width - 50px;
+        window-width: window-width;
+        window-height: window-height;
     }
 }
 

@@ -801,6 +801,94 @@ fn main() -> Result<(), slint::PlatformError> {
         }
     });
 
+    main_window.on_open_order_detail({
+        let rt = rt.as_weak();
+        let main_window = main_window.as_weak();
+        let user_token = user_token.as_weak();
+        move |order_id| {
+            let rt = rt.clone();
+            let main_window = main_window.clone();
+            let user_token = user_token.clone();
+            slint::spawn_local(async move {
+                let rt = rt.unwrap();
+                let main_window = main_window.clone();
+                let user_token = user_token.unwrap();
+                match rt
+                    .spawn(async move {
+                        match user_token.get().await {
+                            Some(token) => {
+                                match url_post::<OrderDetailResponse, OrderDetailRequest>(
+                                    &format!("order/{}/detail", order_id),
+                                    OrderDetailRequest {
+                                        token: token.token,
+                                        tag: token.tag,
+                                        nonce: token.nonce,
+                                    },
+                                )
+                                .await
+                                {
+                                    Ok(order_detail) => {
+                                        let mut book_cover_buffers =
+                                            Vec::with_capacity(order_detail.items.len());
+                                        for item in order_detail.items.iter() {
+                                            book_cover_buffers
+                                                .push(url_get_image_buffer(&item.cover).await.ok());
+                                        }
+                                        Ok((order_detail, book_cover_buffers))
+                                    }
+                                    Err(e) => Err(e),
+                                }
+                            }
+                            None => anyhow::bail!("user token not found"),
+                        }
+                    })
+                    .await
+                    .unwrap()
+                {
+                    Ok((order_detail, book_cover_buffers)) => {
+                        let order = OrderDetail {
+                            id: order_detail.order_id as i32,
+                            discount_percentage: order_detail.discount_percentage.into(),
+                            discount_amount: order_detail.discount_amount.into(),
+                            original_price: order_detail.original_price.into(),
+                            total_price: order_detail.total_price.into(),
+                            order_date: order_detail.order_date.into(),
+                            payment_status: order_detail.payment_status.into(),
+                            shipping_status: order_detail.shipping_status.into(),
+                            shipping_address: order_detail.shipping_address.into(),
+                            books: ModelRc::new(VecModel::from(
+                                order_detail
+                                    .items
+                                    .into_iter()
+                                    .zip(book_cover_buffers.into_iter())
+                                    .map(|(order_item, book_cover)| BookInOrderDetail {
+                                        id: order_item.book_id as i32,
+                                        title: order_item.title.into(),
+                                        publisher: order_item.publisher.name.into(),
+                                        cover: match book_cover {
+                                            Some(buffer) => Image::from_rgba8(buffer),
+                                            None => Image::default(),
+                                        },
+                                        price: order_item.price.into(),
+                                        quantity: order_item.quantity as i32,
+                                        total_price: order_item.total_price.into(),
+                                    })
+                                    .collect::<Vec<_>>(),
+                            )),
+                        };
+                        let order_detail_window = OrderDetailWindow::new().unwrap();
+                        order_detail_window.set_order(order);
+                        order_detail_window.show().unwrap();
+                    }
+                    Err(e) => {
+                        log::error!("{}", e.to_string());
+                    }
+                }
+            })
+            .unwrap();
+        }
+    });
+
     main_window.on_get_search_book_list({
         let rt = rt.as_weak();
         let main_window = main_window.as_weak();
