@@ -44,6 +44,7 @@ component OrderHistoryItem inherits Rectangle {
             }
 
             VerticalLayout {
+                alignment: LayoutAlignment.start;
 
                 HorizontalLayout {
                     alignment: LayoutAlignment.start;
@@ -136,7 +137,6 @@ export component OrderHistoryView inherits Window {
         alignment: LayoutAlignment.start;
         ListView {
             preferred-height: root.window-height;
-
             for order[index] in root.orders: OrderHistoryItem {
                 order: orders[index];
                 item-width: root.item-width;

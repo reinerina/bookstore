@@ -85,11 +85,11 @@ export component MainWindow inherits Window {
                 }
             }
 
-            VerticalBox {
+            VerticalLayout {
                 alignment: LayoutAlignment.center;
                 if (side-bar.current-item == 0):user-view := UserView {
-                    width: root.width - side-bar.width;
-                    height: 100%;
+                    preferred-width: root.width;
+                    preferred-height: root.height;
                     error-login: root.error-login;
                     error-logout: root.error-logout;
                     has-login: root.has-login;
@@ -124,13 +124,15 @@ export component MainWindow inherits Window {
                         root.get-book-list();
                     }
 
-                    width: root.width - side-bar.width;
-                    height: 100%;
+                    preferred-width: root.width;
+                    preferred-height: root.height;
                     books: root.books;
                     has-login: root.has-login;
                     image-width: 150px;
                     image-aspect-ratio: 1;
                     item-width: root.width - side-bar.width - 50px;
+                    window-width: root.width;
+                    window-height: root.height;
 
                     changed selected-book-id => {
                         root.selected-book-id = self.selected-book-id;
@@ -153,8 +155,8 @@ export component MainWindow inherits Window {
                         }
                     }
 
-                    width: root.width - side-bar.width;
-                    height: 100%;
+                    preferred-width: root.width;
+                    preferred-height: root.height;
                     books: root.books-in-cart;
                     image-width: 150px;
                     image-aspect-ratio: 1;
@@ -183,10 +185,10 @@ export component MainWindow inherits Window {
                         }
                     }
 
-                    width: root.width - side-bar.width;
-                    height: 100%;
+                    preferred-width: root.width;
+                    preferred-height: root.height;
                     orders: root.orders;
-                    window-width: root.width - side-bar.width - 50px;
+                    window-width: root.width;
                     window-height: root.height;
                     item-width: root.width - side-bar.width - 50px;
 
@@ -197,14 +199,15 @@ export component MainWindow inherits Window {
 
                 if (side-bar.current-item == 4):book-search-view := BookSearchView {
 
-                    width: root.width - side-bar.width;
-                    height: 100%;
+                    preferred-width: root.width;
+                    preferred-height: root.height;
                     books: root.books-in-search;
                     image-width: 150px;
                     image-aspect-ratio: 1;
                     item-width: root.width - side-bar.width - 50px;
                     window-height: root.height;
                     window-width: root.width;
+                    has-login: root.has-login;
 
                     search-text <=> root.search-text;
                     search-mode <=> root.search-mode;
@@ -216,11 +219,15 @@ export component MainWindow inherits Window {
                     get-search-book-list(keyword, mode) => {
                         root.get-search-book-list(keyword, mode);
                     }
+
+                    add-to-cart(id, quantity) => {
+                        root.add-to-cart(id, quantity);
+                    }
                 }
 
                 if (side-bar.current-item == 5):about-view := AboutView {
-                    width: root.width - side-bar.width;
-                    height: 100%;
+                    preferred-width: root.width;
+                    preferred-height: root.height;
                 }
             }
         }
@@ -244,12 +251,11 @@ export component BookDetailWindow inherits Window {
 
     book-detail := BookDetailView {
         book: book;
-        width: root.width;
-        height: root.height;
         image-width: root.image-width;
         image-aspect-ratio: root.image-aspect-ratio;
         item-width: root.window-width - 50px;
-        preferred-height: root.window-height;
+        preferred-width: root.width;
+        preferred-height: root.height;
     }
 }
 
@@ -372,6 +378,8 @@ export component OrderDetailWindow inherits Window {
         item-width: root.width - 50px;
         window-width: window-width;
         window-height: window-height;
+        preferred-width: root.width;
+        preferred-height: root.height;
     }
 }
 

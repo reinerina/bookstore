@@ -1,4 +1,4 @@
-import { VerticalBox, HorizontalBox, ListView, LineEdit, Button, ComboBox } from "std-widgets.slint";
+import { VerticalBox, HorizontalBox, ListView, LineEdit, Button, ComboBox, SpinBox } from "std-widgets.slint";
 
 export struct BookInSearch {
         id: int,
@@ -16,10 +16,12 @@ component BookSearchItem inherits Rectangle {
     in property <length> image-width;
     in property <float> image-aspect-ratio;
     in property <length> item-width;
+    in property <bool> has-login;
 
     width: root.item-width;
 
     callback clicked <=> touch.clicked;
+    callback add-to-cart(int, int);
 
     states [
         pressed when touch.pressed: {
@@ -30,15 +32,16 @@ component BookSearchItem inherits Rectangle {
         }
     ]
 
-    VerticalBox {
+    VerticalLayout {
         alignment: LayoutAlignment.start;
+        width: root.item-width;
         Rectangle {
             touch := TouchArea {
                 width: 100%;
                 height: 100%;
             }
 
-            HorizontalBox {
+            HorizontalLayout {
                 alignment: LayoutAlignment.start;
                 Image {
                     width: root.image-width;
@@ -101,11 +104,30 @@ component BookSearchItem inherits Rectangle {
                 }
             }
         }
+
+        if(root.has-login): HorizontalLayout {
+            alignment: LayoutAlignment.end;
+            padding-top: 8px;
+            padding-bottom: 8px;
+            quantity := SpinBox {
+                minimum: 1;
+                maximum: 100;
+                value: 1;
+            }
+
+            add-button := Button {
+                text: "Add to Cart";
+                clicked => {
+                    root.add-to-cart(root.book.id, quantity.value);
+                }
+            }
+        }
     }
 }
 
 export component BookSearchView inherits Window {
     in property <[BookInSearch]> books;
+    in property <bool> has-login;
     in property <length> image-width: 100px;
     in property <float> image-aspect-ratio: 1.5;
     in property <length> item-width: 300px;
@@ -117,11 +139,12 @@ export component BookSearchView inherits Window {
 
     callback open-book-detail(int);
     callback get-search-book-list(string, int);
+    callback add-to-cart(int, int);
 
     VerticalBox {
         alignment: LayoutAlignment.start;
 
-        HorizontalBox {
+        search-widget := HorizontalBox {
             alignment: LayoutAlignment.start;
             LineEdit {
                 preferred-width: root.window-width;
@@ -138,7 +161,7 @@ export component BookSearchView inherits Window {
 
                 ComboBox {
                     current-index <=> root.search-mode;
-                    width: 100px;
+                    width: 120px;
                     model: ["Title", "Author", "Keyword"];
                 }
             }
@@ -158,9 +181,14 @@ export component BookSearchView inherits Window {
                 image-width: root.image-width;
                 image-aspect-ratio: root.image-aspect-ratio;
                 item-width: root.item-width;
+                has-login: root.has-login;
 
                 clicked => {
                     root.open-book-detail(book.id);
+                }
+
+                add-to-cart(id, quantity) => {
+                    root.add-to-cart(id, quantity);
                 }
             }
         }

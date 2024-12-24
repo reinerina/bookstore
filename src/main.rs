@@ -803,15 +803,15 @@ fn main() -> Result<(), slint::PlatformError> {
 
     main_window.on_open_order_detail({
         let rt = rt.as_weak();
-        let main_window = main_window.as_weak();
+        // let main_window = main_window.as_weak();
         let user_token = user_token.as_weak();
         move |order_id| {
             let rt = rt.clone();
-            let main_window = main_window.clone();
+            // let main_window = main_window.clone();
             let user_token = user_token.clone();
             slint::spawn_local(async move {
                 let rt = rt.unwrap();
-                let main_window = main_window.clone();
+                // let main_window = main_window.clone();
                 let user_token = user_token.unwrap();
                 match rt
                     .spawn(async move {

@@ -96,7 +96,7 @@ export component OrderDetailView inherits Window {
             alignment: LayoutAlignment.start;
             VerticalLayout {
                 ListView {
-                    preferred-height: root.height - 216px;
+                    preferred-height: root.height;
                     preferred-width: root.width;
                     for book[index] in order.books: OrderDetailItem {
                         book: root.order.books[index];

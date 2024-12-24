@@ -103,11 +103,10 @@ component BookListItem inherits Rectangle {
             }
         }
 
-        add-widget := HorizontalLayout {
+        if(root.has-login): HorizontalLayout {
             alignment: LayoutAlignment.end;
             padding-top: 8px;
             padding-bottom: 8px;
-            visible: root.has-login;
             quantity := SpinBox {
                 minimum: 1;
                 maximum: 100;

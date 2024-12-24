@@ -143,27 +143,24 @@ export component BookCartView inherits Window {
         ListView {
             preferred-height: root.window-height;
 
-            for book[index] in root.books: VerticalLayout {
-                BookInCartItem {
-                    book: book;
-                    image-width: root.image-width;
-                    image-aspect-ratio: root.image-aspect-ratio;
-                    item-width: root.item-width;
+            for book[index] in root.books: BookInCartItem {
+                book: book;
+                image-width: root.image-width;
+                image-aspect-ratio: root.image-aspect-ratio;
+                item-width: root.item-width;
 
-                    update-cart-book(id, quantity) => {
-                        root.update-cart-book(id, quantity);
-                    }
+                update-cart-book(id, quantity) => {
+                    root.update-cart-book(id, quantity);
+                }
 
-                    remove-cart-book(id) => {
-                        root.remove-cart-book(id);
-                    }
+                remove-cart-book(id) => {
+                    root.remove-cart-book(id);
                 }
             }
         }
 
         HorizontalLayout {
             alignment: LayoutAlignment.end;
-            width: root.item-width;
             padding-top: 8px;
             padding-bottom: 8px;
             checkout-button := Button {
