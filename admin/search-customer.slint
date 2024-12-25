@@ -1,0 +1,146 @@
+import { VerticalBox, HorizontalBox, ListView, LineEdit, Button, ComboBox } from "std-widgets.slint";
+export struct CustomerInSearch {
+    id: int,
+    username: string,
+    password: string,
+    realname: string,
+    address: string,
+    email: string,
+    account-banlance: string,
+    credit-level: string,
+}
+
+component CustomerSearchItem inherits Rectangle {
+    in property <CustomerInSearch> customer;
+    in property <length> item-width;
+
+    width: root.item-width;
+
+    callback clicked <=> touch.clicked;
+
+    states [
+        pressed when touch.pressed: {
+            state.opacity: 0.6;
+        }
+        hover when touch.has-hover: {
+            state.opacity: 0.4;
+        }
+    ]
+
+    VerticalBox {
+        alignment: LayoutAlignment.start;
+        Rectangle {
+            touch := TouchArea {
+                width: 100%;
+                height: 100%;
+            }
+
+            HorizontalBox {
+                alignment: LayoutAlignment.start;
+                Rectangle {
+                    width: root.item-width;
+
+                    state := Rectangle {
+                        opacity: 0;
+                        background: Colors.gray;
+
+                        animate opacity { duration: 150ms; }
+                    }
+
+                    VerticalBox {
+                        alignment: LayoutAlignment.start;
+                        Text {
+                            text: "Customer Id: " + root.customer.id;
+                        }
+
+                        Text {
+                            text: "Account name: " + root.customer.username;
+                        }
+                        
+                        Text {
+                            text: "Password: " + root.customer.password;
+                        }
+
+                        Text {
+                            text: "Real name: " + root.customer.realname;
+                        }
+
+                        Text {
+                            text: "Address: " + root.customer.address;
+                        }
+
+                        Text {
+                            text: "Account balance: " + root.customer.account-banlance;
+                        }
+
+                        Text {
+                            text: "Credit level: " + root.customer.credit-level;
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+export component CustomerSearchView inherits Window {
+    in property <[CustomerInSearch]> customersSearched;
+    in property <length> item-width: 300px;
+    in property <length> window-width: 800px;
+    in property <length> window-height: 600px;
+
+    in-out property <int> search-mode: 0;
+    in-out property <string> search-text;
+
+    callback open-customer-detail(int);
+    callback get-search-customer-list(string, int);
+
+    VerticalBox {
+        alignment: LayoutAlignment.start;
+
+        HorizontalBox {
+            alignment: LayoutAlignment.start;
+            LineEdit {
+                preferred-width: root.window-width;
+                text <=> root.search-text;
+                placeholder-text: "Search customer by real name or account name";
+                font-size: 15px;
+            }
+
+            HorizontalLayout {
+                Text {
+                    text: "Sort by: ";
+                    vertical-alignment: TextVerticalAlignment.center;
+                }
+
+                ComboBox {
+                    current-index <=> root.search-mode;
+                    width: 100px;
+                    model: ["realName", "accountName"];
+                }
+            }
+
+            Button {
+                text: "Search";
+                clicked => {
+                    root.get-search-customer-list(root.search-text, root.search-mode);
+                }
+            }
+            //按下按钮活动搜索到的customer名单，然后在下面的ListView中显示
+        }
+
+        ListView {
+            preferred-height: root.window-height;
+            for customer in root.customersSearched: CustomerSearchItem {
+                customer: customer;
+                item-width: root.item-width;
+
+                clicked => {
+                    root.open-customer-detail(customer.id);
+                    //这里要找到特定id的customer，还要打开新窗口显示这个customer的详细信息
+                    //因为之前的个人信息已经输出，所以这里只输出所有订单信息
+                }
+            }
+        }
+    }
+}

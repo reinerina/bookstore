@@ -1,0 +1,138 @@
+import { VerticalBox, Button, ListView } from "std-widgets.slint";
+
+export struct OrderHistory {
+    id: int,
+    discount_percentage: string,
+    discount_amount: string,
+    original_price: string,
+    total_price: string,
+    order_date: string,
+    payment_status: string,
+    shipping_status: string,
+}
+
+component OrderHistoryItem inherits Rectangle {
+    in property <OrderHistory> order;
+    in property <length> item-width;
+
+    width: root.item-width;
+    callback clicked <=> touch.clicked;
+
+    states [
+        pressed when touch.pressed: {
+            state.opacity: 0.6;
+        }
+        hover when touch.has-hover: {
+            state.opacity: 0.4;
+        }
+    ]
+
+    VerticalLayout {
+        alignment: LayoutAlignment.start;
+        width: root.item-width;
+        Rectangle {
+            touch := TouchArea {
+                width: 100%;
+                height: 100%;
+            }
+
+            state := Rectangle {
+                opacity: 0;
+                background: Colors.gray;
+
+                animate opacity { duration: 150ms; }
+            }
+
+            VerticalLayout {
+
+                HorizontalLayout {
+                    alignment: LayoutAlignment.start;
+                    Text {
+                        text: "Order Date: " + root.order.order_date;
+                    }
+
+                    Text {
+                        text: "Total Price: " + root.order.total_price;
+                    }
+
+                    Text {
+                        text: "Payment Status: " + root.order.payment_status;
+                    }
+
+                    Text {
+                        text: "Shipping Status: " + root.order.shipping_status;
+                    }
+                }
+
+                HorizontalLayout {
+                    alignment: LayoutAlignment.start;
+                    Text {
+                        text: "Discount Percentage: " + root.order.discount_percentage;
+                    }
+
+                    Text {
+                        text: "Discount Amount: " + root.order.discount_amount;
+                    }
+
+                    Text {
+                        text: "Original Price: " + root.order.original_price;
+                    }
+                }
+            }
+        }
+
+        HorizontalLayout {
+            alignment: LayoutAlignment.end;
+            padding-top: 8px;
+            padding-bottom: 8px;
+            Button {
+                text: "View";
+                clicked => {
+                }
+            }
+
+            Button {
+                text: "Delete";
+                clicked => {
+                }
+            }
+
+            Button {
+                text: "Edit";
+                clicked => {
+                }
+            }
+
+            Button {
+                text: "Pay";
+                clicked => {
+                }
+            }
+
+            Button {
+                text: "Cancel";
+                clicked => {
+                }
+            }
+        }
+    }
+}
+
+export component OrderHistoryView inherits Window {
+    in property <length> item-width: 300px;
+    in property <[OrderHistory]> orders;
+    in property <length> window-width: 800px;
+    in property <length> window-height: 600px;
+
+    VerticalBox {
+        alignment: LayoutAlignment.start;
+        ListView {
+            preferred-height: root.window-height;
+
+            for order[index] in root.orders: OrderHistoryItem {
+                order: orders[index];
+                item-width: root.item-width;
+            }
+        }
+    }
+}

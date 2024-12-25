@@ -1,0 +1,71 @@
+import { VerticalBox, Button, ListView } from "std-widgets.slint";
+import {customerOrder} from "customer-order.slint"; //之前定义的顾客订单结构体
+import {BookInCart} from "admin-cart.slint";
+
+export component customerDetailView inherits Rectangle {
+    in property <[customerOrder]> specificOrders; //获取的特定顾客的所有订单，输出其详细信息
+    in property <length> item-width;
+
+    width: root.item-width;
+
+    VerticalBox {
+        alignment: LayoutAlignment.start;
+        VerticalLayout {    //订单与订单之间使用垂直布局
+            alignment: LayoutAlignment.start;
+            for customerOrder[index1] in root.specificOrders: Rectangle {
+                width: root.item-width;
+                VerticalLayout {
+                    alignment: LayoutAlignment.start;
+                    Text {
+                        text: "Order ID: " + root.specificOrders[index1].id;
+                    }
+                    Text {
+                        text: "Order Date: " + root.specificOrders[index1].order_date;
+                    }
+
+                    Text{
+                        text: "Customer id: " + root.specificOrders[index1].customer_id;
+                    }
+
+                    Text {
+                        text: "Total Price: " + root.specificOrders[index1].total_price;
+                    }
+
+                    Text {
+                        text: "Payment Status: " + root.specificOrders[index1].payment_status;
+                    }
+
+                    Text {
+                        text: "Shipping Status: " + root.specificOrders[index1].shipping_status;
+                    }
+                }
+                HorizontalLayout {
+                    alignment: LayoutAlignment.start;
+                    Text {
+                        text: "Discount Percentage: " + root.specificOrders[index1].discount_percentage;
+                    }
+
+                    Text {
+                        text: "Discount Amount: " + root.specificOrders[index1].discount_amount;
+                    }
+
+                    Text {
+                        text: "Original Price: " + root.specificOrders[index1].original_price;
+                    }
+                }
+                VerticalLayout {
+                    alignment: LayoutAlignment.start;
+                    for BookInCart[index2] in root.specificOrders[index1].books: Rectangle {
+                        width: root.item-width;
+                        Text{
+                            text: "Book Title: " + root.specificOrders[index1].books[index2].title;
+                        }
+                        Text{
+                            text: "Book quantity: " + root.specificOrders[index1].books[index2].quantity;
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

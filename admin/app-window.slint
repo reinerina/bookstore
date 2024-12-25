@@ -1,0 +1,400 @@
+import { Button, VerticalBox, HorizontalBox, ListView, StandardButton, AboutSlint } from "std-widgets.slint";
+import { SideBar } from "side-bar.slint";
+import { UserView } from "user.slint";
+import { UserDetail } from "user-detail.slint";
+import { InventoryManagement, Book } from "book-management.slint";
+import { BookCartView, BookInCart } from "admin-cart.slint";
+import { BookRestockList} from "purchase-list.slint";
+import {restockOrder, BookItem, restockHistory} from "restock-order.slint";
+import {customerView, customerDetail} from "customer-view.slint";
+import {customerOrderView} from "customer-order.slint";
+import { OrderHistory } from "order-history.slint";
+import { supplierView } from "supplier-view.slint";
+import { BookDetailView, BookInDetail } from "book-detail.slint";
+import { BookSearchView, BookInSearch } from "search-book.slint";
+import { CustomerInSearch, CustomerSearchView } from "search-customer.slint";
+
+export component MainWindow inherits Window {
+
+    in property <bool> error-login;
+    in property <bool> error-logout;
+    in property <string> error-login-message;
+
+    in property <UserDetail> user-detail;
+    in property <bool> has-login;
+
+    in property <[Book]> books;
+    //import { Book } from "book-management.slint";统一定义在book-management.slint中
+
+    in property <[BookInCart]> books-in-cart;
+    in property <[BookInSearch]> books-in-search;
+
+    in property <[OrderHistory]> orders;
+    in property <[restockOrder]> restock-orders;
+
+    in property <[customerDetail]> customers;   //customer-view.slint中的顾客信息结构
+
+    out property <int> selected-book-id: -1;
+
+    property <string> username;
+    property <string> password;
+
+    in property <[CustomerInSearch]> customers-in-search;
+    property <string> search-text;
+    property <int> search-mode: 0;
+
+    callback user-login(string, string);
+    callback user-register();
+    callback user-logout();
+    callback get-user-detail();
+
+    callback open-book-detail(string);
+    callback edit-stock(string, int);
+    callback add-book();
+
+  
+    callback get-book-list();
+    callback add-to-cart(string, int);
+
+    callback get-restock-order-list();
+    callback view-order(string);
+    callback delete-order(string);
+    callback confirm-receipt(string);
+
+    callback get-cart-book-list();
+    callback update-cart-book(int, int, [BookInCart]);
+    callback remove-cart-book(int, [BookInCart]);
+    callback checkout();
+
+    callback get-customers-list();
+    callback edit-customer(int, string, string);
+
+    callback get-customer-orders-list();
+    callback delete-customer-order(string);
+    callback send-goods(string);
+
+    callback get-supplier-list();
+    callback open-supplier-detail(int); //id是int变量
+
+    //callback open-book-detail(int); 之前已经声明
+    callback get-search-book-list(string, int);
+
+    callback open-customer-detail(int);
+    callback get-search-customer-list(string, int); 
+
+    title: "Bookstore Admin App";
+    preferred-width: 800px;
+    preferred-height: 600px;
+    min-width: 800px;
+    min-height: 600px;
+    HorizontalLayout {
+        side-bar := SideBar {
+            title: @tr("Bookstore Admin App");
+            model: [
+                //@tr("Menu" => "Customer Profile"),
+                @tr("Menu" => "Login & Admin Info"),
+                @tr("Menu" => "Inventory Management"),
+                @tr("Menu" => "Book Restock"),
+                @tr("Menu" => "Admin Cart"),
+                @tr("Menu" => "Orders"),
+                @tr("Menu" => "Customer Profiles"),
+                @tr("Menu" => "Customer orders"),
+                @tr("Menu" => "Supplier Profiles"),
+                @tr("Menu" => "Search Book"),
+                @tr("Menu" => "Search Customer"),
+                @tr("Menu" => "About")
+            ];
+        }
+
+        VerticalLayout {
+            alignment: LayoutAlignment.start;
+            VerticalLayout {
+                alignment: LayoutAlignment.start;
+                padding-top: 8px;
+                padding-left: 8px;
+                HorizontalLayout {
+                    alignment: LayoutAlignment.start;
+                    Button {
+                        text: side-bar.collapsed ? ">" : "<";
+                        clicked => {
+                            side-bar.collapsed = !side-bar.collapsed;
+                        }
+                    }
+                }
+            }
+
+            VerticalBox {
+                alignment: LayoutAlignment.center;
+                //Login & Admin Info
+                if (side-bar.current-item == 0):admin-info := UserView {
+                    error-login: root.error-login;
+                    error-logout: root.error-logout;
+                    has-login: root.has-login;
+
+                    error-login-message: root.error-login-message;
+
+                    user-detail: root.user-detail;
+
+                    username <=> root.username;
+                    password <=> root.password;
+
+                    user-login(username, password) => {
+                        root.user-login(username, password);
+                    }
+                    user-register => {
+                        root.user-register();
+                    }
+                    user-logout => {
+                        root.user-logout();
+                    }
+                    get-user-detail => {
+                        root.get-user-detail();
+                    }
+                }
+
+                //Inventory Management
+                if (side-bar.current-item == 1):book-management := InventoryManagement {
+
+                    init => {
+                        root.get-book-list();
+                    }
+
+                    books: root.books;
+                    has-login: root.has-login;
+                    image-width: 150px;
+                    image-aspect-ratio: 1;
+                    item-width: root.width - side-bar.width - 50px;
+
+                    changed selected-book-id => {
+                        root.selected-book-id = self.selected-book-id;
+                    }
+
+                    open-book-detail(id) => {
+                        root.open-book-detail(id);
+                    }
+
+                    edit-stock(id, quantity) => {
+                        root.edit-stock(id, quantity); 
+                    }
+
+                    add-book => {
+                        root.add-book();
+                    }
+                }
+
+                //Book Restock
+                if (side-bar.current-item == 2):book-restock := BookRestockList {
+                    //展示书籍列表，和InventoryManagement一样（purchase.slint）
+                    init => {
+                        root.get-book-list();
+                    }
+
+                    books: root.books;   
+                    image-width: 150px;
+                    image-aspect-ratio: 1;
+                    item-width: root.width - side-bar.width - 50px;
+                    window-height: root.height;
+                    window-width: root.width;
+
+                    add-to-cart(id, quantity) => {
+                        root.update-cart-book(id, quantity, root.books-in-cart);
+                    }
+
+                
+                }
+
+                //Admin Cart
+                if (side-bar.current-item == 3):book-cart-view := BookCartView {
+                    //补充库存的购物车列表，和之前的BookCartView一样（admin-cart.slint）
+                    init => {
+                        root.get-cart-book-list();
+                    }
+
+                    books: root.books-in-cart;
+                    image-width: 150px;
+                    image-aspect-ratio: 1;
+                    item-width: root.width - side-bar.width - 50px;
+                    window-height: root.height;
+                    window-width: root.width;
+
+                    update-cart-book(id, quantity) => {
+                        root.update-cart-book(id, quantity, root.books-in-cart);
+                    }
+
+                    remove-cart-book(id) => {
+                        root.remove-cart-book(id, root.books-in-cart);
+                    }
+
+                    checkout => {
+                        root.checkout();
+                    }
+                }
+
+                if (side-bar.current-item == 4):order-history-view := restockHistory {
+
+                    init => {
+                        root.get-restock-order-list();
+                    }
+
+                    orders: root.restock-orders;
+                    window-width: root.width - side-bar.width - 50px;
+                    window-height: root.height;
+                    item-width: root.width - side-bar.width - 50px;
+                    view-order(id) => {
+                        root.view-order(id);
+                    }
+                    delete-order(id) => {
+                        root.delete-customer-order(id);
+                    }
+                    confirm-receipt(id) => {
+                        root.confirm-receipt(id);
+                    }
+                }
+            
+
+                // if (side-bar.current-item == 4):order-history-view := OrderHistoryView {
+
+                //     init => {
+                //         root.get-order-history-list();
+                //     }
+
+                //     orders: root.orders;
+                //     window-width: root.width - side-bar.width - 50px;
+                //     window-height: root.height;
+                //     item-width: root.width - side-bar.width - 50px;
+                // }
+
+                if (side-bar.current-item == 5):customers-view := customerView {
+
+                    init => {
+                        root.get-customers-list();
+                    }
+
+                    customers: root.customers;
+                    window-width: root.width - side-bar.width - 50px;
+                    window-height: root.height;
+                    item-width: root.width - side-bar.width - 50px;
+                    edit-customer(id, new-balance, credit-level) => {
+                        root.edit-customer(id, new-balance, credit-level);
+                    }
+                }
+
+                if (side-bar.current-item == 6):customers-order-view := customerOrderView {
+
+                    init => {
+                        root.get-customer-orders-list();
+                    }
+                    window-width: root.width - side-bar.width - 50px;
+                    window-height: root.height;
+                    item-width: root.width - side-bar.width - 50px;
+                    delete-customer-order(id) => {
+                        root.delete-customer-order(id);
+                    }
+
+                    send-goods(id) =>{
+                        root.send-goods(id);
+                    }
+                }
+
+                if (side-bar.current-item == 7):supplier-view := supplierView {
+
+                    init => {
+                        root.get-supplier-list();
+                    }
+
+                    window-width: root.width - side-bar.width - 50px;
+                    window-height: root.height;
+                    item-width: root.width - side-bar.width - 50px;
+                    open-supplier-detail(id) =>{
+                        root.open-supplier-detail(id);
+                    }
+                }
+
+                if (side-bar.current-item == 8):book-search-view := BookSearchView {
+
+                    books: root.books-in-search;
+                    image-width: 150px;
+                    image-aspect-ratio: 1;
+                    item-width: root.width - side-bar.width - 50px;
+                    window-height: root.height;
+                    window-width: root.width;
+
+                    search-text <=> root.search-text;
+                    search-mode <=> root.search-mode;
+
+                    open-book-detail(id) => {
+                        root.open-book-detail(id);
+                    }
+
+                    get-search-book-list(keyword, mode) => {
+                        root.get-search-book-list(keyword, mode);
+                    }
+                }
+
+                if (side-bar.current-item == 9):customer-search-view := CustomerSearchView {
+
+                    customersSearched: root.customers-in-search;
+                    item-width: root.width - side-bar.width - 50px;
+                    window-height: root.height;
+                    window-width: root.width;
+
+                    search-text <=> root.search-text;
+                    search-mode <=> root.search-mode;
+
+                    open-customer-detail(id) => {
+                        root.open-customer-detail(id);
+                    }
+
+                    get-search-customer-list(keyword, mode) => {
+                        root.get-search-customer-list(keyword, mode);
+                    }
+                }
+
+            }
+        }
+    }
+}
+
+export component BookDetailWindow inherits Window {
+    in property <BookInDetail> book;
+    in property <length> image-width: 100px;
+    in property <float> image-aspect-ratio: 1;
+    in property <length> item-width: 600px;
+    in property <length> window-width: 600px;
+    in property <length> window-height: 238px;
+
+    title: "Book \{book.title} Detail";
+    preferred-width: root.window-width;
+    preferred-height: root.window-height;
+
+    min-width: root.window-width;
+    min-height: root.window-height;
+
+    book-detail := BookDetailView {
+        book: book;
+        image-width: root.image-width;
+        image-aspect-ratio: root.image-aspect-ratio;
+        item-width: root.window-width - 50px;
+        preferred-height: root.window-height;
+    }
+}
+
+export component ErrorDialog inherits Dialog {
+    in property <string> dialog-title;
+    in property <string> dialog-message;
+
+    title: dialog-title;
+    preferred-width: 400px;
+    preferred-height: 200px;
+    VerticalBox {
+        alignment: LayoutAlignment.center;
+        Text {
+            text: dialog-message;
+        }
+    }
+
+    StandardButton {
+        kind: StandardButtonKind.ok;
+        dialog-button-role: DialogButtonRole.accept;
+    }
+}

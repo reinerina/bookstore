@@ -1,0 +1,59 @@
+import { HorizontalBox, VerticalBox, Button } from "std-widgets.slint";
+
+export struct UserDetail {
+    username: string,
+    name: string,
+    address: string,
+    email: string,
+}
+
+export component UserDetailView inherits Window {
+    in property <UserDetail> user-detail;
+    in property <bool> error-logout;
+
+    callback user-logout();
+    callback get-user-detail();
+
+    width: 100%;
+    height: 100%;
+
+    init => {
+        get-user-detail()
+    }
+
+    VerticalLayout {
+        alignment: LayoutAlignment.center;
+        HorizontalBox {
+            alignment: LayoutAlignment.center;
+            VerticalBox {
+                Text {
+                    text: "Username: " + root.user-detail.username;
+                }
+
+                Text {
+                    text: "Name: " + root.user-detail.name;
+                }
+
+                Text {
+                    text: "Address: " + root.user-detail.address;
+                }
+
+                Text {
+                    text: "Email: " + root.user-detail.email;
+                }
+
+                Text {
+                    text: "Error occurred during logout";
+                    visible: root.error-logout;
+                }
+
+                Button {
+                    text: "Logout";
+                    clicked => {
+                        root.user-logout();
+                    }
+                }
+            }
+        }
+    }
+}

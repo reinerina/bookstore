@@ -1,0 +1,176 @@
+import { VerticalBox, SpinBox, Button, ListView } from "std-widgets.slint";
+export struct BookInCart {
+    id: int,
+    isbn: string,
+    title: string,
+    authors: [string],
+    publisher: string,
+    price: string,
+    cover: image,
+    quantity: int,
+    total: string,
+}
+
+component BookInCartItem inherits Rectangle {   //显示在购买界面的记录
+    in property <BookInCart> book;
+    in property <length> image-width;
+    in property <float> image-aspect-ratio;
+    in property <length> item-width;
+
+    width: root.item-width;
+
+    callback clicked <=> touch.clicked;
+    callback update-cart-book(int, int);
+    callback remove-cart-book(int);
+    states [
+        pressed when touch.pressed: {
+            state.opacity: 0.6;
+        }
+        hover when touch.has-hover: {
+            state.opacity: 0.4;
+        }
+    ]
+
+    VerticalLayout {
+        alignment: LayoutAlignment.start;
+        Rectangle {
+            touch := TouchArea {
+                width: 100%;
+                height: 100%;
+            }
+
+            HorizontalLayout {
+                alignment: LayoutAlignment.start;
+                Image {
+                    width: root.image-width;
+                    height: root.image-width / root.image-aspect-ratio;
+                    source: root.book.cover;
+                }
+
+                Rectangle {
+                    width: root.item-width - root.image-width;
+                    state := Rectangle {
+                        opacity: 0;
+                        background: Colors.gray;
+
+                        animate opacity { duration: 150ms; }
+                    }
+
+                    VerticalBox {
+                        alignment: LayoutAlignment.start;
+
+                        Text {
+                            text: root.book.title;
+                        }
+
+                        Text {
+                            text: root.book.isbn;
+                        }
+
+                        HorizontalLayout {
+                            alignment: LayoutAlignment.start;
+                            Text {
+                                text: "Authors: ";
+                            }
+
+                            for author[index] in root.book.authors: Text {
+                                text: index < root.book.authors.length - 1 ? author + ", " : author;
+                                vertical-alignment: TextVerticalAlignment.center;
+                            }
+                        }
+
+                        Text {
+                            text: root.book.publisher;
+                        }
+
+                        Text {
+                            text: root.book.price;
+                    }
+                }
+            }
+        }
+        //考虑不在每一条购物车记录生成价格，这里注释掉
+        // HorizontalLayout {
+        //     alignment: LayoutAlignment.stretch;
+        //     padding-top: 8px;
+        //     padding-bottom: 8px;
+        //     HorizontalLayout {
+        //         alignment: LayoutAlignment.start;
+        //         Text {
+        //             text: "Total: " + root.book.total;
+        //             vertical-alignment: TextVerticalAlignment.center;
+        //         }
+        //     }
+
+            HorizontalLayout {
+                alignment: LayoutAlignment.end;
+                quantity := SpinBox {
+                    value: root.book.quantity;
+                    minimum: 1;
+                    maximum: 100;
+                    edited => {
+                        root.update-cart-book(root.book.id, self.value);
+                    }
+                }
+
+                remove := Button {
+                    text: "Remove";
+                    clicked => {
+                        root.remove-cart-book(root.book.id);
+                    }
+                }
+            }
+        }
+    }
+}
+
+export component BookCartView inherits Window {
+    in property <[BookInCart]> books;
+
+    in property <length> image-width: 100px;
+    in property <float> image-aspect-ratio: 1.5;
+    in property <length> item-width: 300px;
+    in property <length> window-width: 800px;
+    in property <length> window-height: 600px;
+
+    callback update-cart-book(int, int);
+    callback remove-cart-book(int);
+    callback checkout();
+
+    VerticalBox {
+        alignment: LayoutAlignment.start;
+        ListView {
+            preferred-height: root.window-height;
+
+            for book[index] in root.books: VerticalLayout {
+                BookInCartItem {
+                    book: book;
+                    image-width: root.image-width;
+                    image-aspect-ratio: root.image-aspect-ratio;
+                    item-width: root.item-width;
+
+                    update-cart-book(id, quantity) => {
+                        root.update-cart-book(id, quantity);
+                    }
+
+                    remove-cart-book(id) => {
+                        root.remove-cart-book(id);
+                    }
+                }
+            }
+        }
+
+        HorizontalLayout {
+            alignment: LayoutAlignment.end;
+            padding-top: 8px;
+            padding-bottom: 8px;
+            
+            checkout-button := Button {
+                text: "Checkout";
+                clicked => {
+                    root.checkout();
+                }
+            }
+        }
+    }
+}

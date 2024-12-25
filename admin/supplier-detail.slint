@@ -1,0 +1,150 @@
+import { VerticalBox, HorizontalBox } from "std-widgets.slint";
+import { supplier } from "supplier-view.slint";
+import { BookDetailView } from "book-detail.slint";
+
+export component BookDetailView inherits Rectangle {
+    in property <supplier> supplier;
+    in property <length> item-width: 300px;
+
+    width: root.item-width;
+
+    VerticalBox {
+        alignment: LayoutAlignment.start;
+        Rectangle {
+            HorizontalBox {
+                alignment: LayoutAlignment.start;
+                Rectangle {
+                    width: root.item-width;
+
+                    VerticalBox {
+                        alignment: LayoutAlignment.start;
+                        Text {
+                            text: "Supplier id: " + root.supplier.id;
+                        }
+
+                        Text {
+                            text: "Supplier name: " + root.supplier.name;
+                        }
+
+                        Text {
+                            text: "Supplier telephone: " + root.supplier.telephone;
+                        }
+
+                        Text {
+                            text: "Supplier email: " + root.supplier.email;
+                        }
+
+                        Text {
+                            text: "Supplier address: " + root.supplier.address;
+                        }
+
+                        Text {
+                            text: "Supplier fax: " + root.supplier.fax;
+                        }
+
+                        VerticalLayout {
+                            alignment: LayoutAlignment.start;
+                            Text {
+                                text: "supplied books: ";
+                            }
+
+                            for book[index] in root.supplier.books: Rectangle {
+                                in property <length> image-width: 100px;
+                                in property <float> image-aspect-ratio: 1;
+                                in property <length> item-width: 300px;
+                                width: root.item-width;
+
+                                VerticalBox {
+                                    alignment: LayoutAlignment.start;
+                                    Rectangle {
+
+                            
+                                        HorizontalBox {
+                                            alignment: LayoutAlignment.start;
+                                            Image {
+                                                width: image-width;
+                                                height: image-width / image-aspect-ratio;
+                                                source: book.cover;
+                                            }
+                            
+                                            Rectangle {
+                                                width: item-width - image-width;
+                            
+                                                VerticalBox {
+                                                    alignment: LayoutAlignment.start;
+                                                    Text {
+                                                        text: "ISBN: " + book.isbn;
+                                                    }
+                            
+                                                    Text {
+                                                        text: "Title: " + book.title;
+                                                    }
+                            
+                                                    HorizontalLayout {
+                                                        alignment: LayoutAlignment.start;
+                                                        Text {
+                                                            text: "Authors: ";
+                                                        }
+                            
+                                                        for author[index] in book.authors: Text {
+                                                            text: index < book.authors.length - 1 ? author + ", " : author;
+                                                        }
+                                                    }
+                            
+                                                    Text {
+                                                        text: "Publisher: " + book.publisher;
+                                                    }
+                            
+                                                    Text {
+                                                        text: "Price: " + book.price;
+                                                    }
+                            
+                                                    HorizontalLayout {
+                                                        alignment: LayoutAlignment.start;
+                                                        Text {
+                                                            text: "Keywords: ";
+                                                        }
+                            
+                                                        for keyword[index] in book.keywords: Text {
+                                                            text: index < book.keywords.length - 1 ? keyword + ", " : keyword;
+                                                        }
+                                                    }
+                            
+                                                    Text {
+                                                        text: "Catalog: " + book.catalog;
+                                                    }
+                            
+                                                    HorizontalLayout {
+                                                        alignment: LayoutAlignment.start;
+                                                        Text {
+                                                            text: "Suppliers: ";
+                                                        }
+                            
+                                                        for supplier[index] in book.suppliers: Text {
+                                                            text: index < book.suppliers.length - 1 ? supplier + ", " : supplier;
+                                                        }
+                                                    }
+                            
+                                                    HorizontalLayout {
+                                                        alignment: LayoutAlignment.start;
+                                                        Text {
+                                                            text: "Series: ";
+                                                        }
+                            
+                                                        for series[index] in book.series: Text {
+                                                            text: index < book.series.length - 1 ? series + ", " : series;
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

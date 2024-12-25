@@ -1,0 +1,97 @@
+import { Button, VerticalBox, LineEdit, SpinBox, HorizontalBox } from "std-widgets.slint";
+
+export component AddBookDialog inherits Window {
+    in-out property <bool> is-open;  
+    in-out property <string> isbn;
+    in-out property <string> bookTitle;
+    in-out property <[string]> authors;
+    in-out property <string> publisher;
+    in-out property <string> price;
+    in-out property <[string]> keywords;
+    in-out property <int> stock;
+
+    callback add-book(string, string, [string], string, string, [string], int);  
+
+    VerticalBox {
+        width: 400px;
+        padding: 16px;
+        spacing: 12px;  
+        visible: root.is-open;
+
+        Text {
+            text: "Add New Book";
+            font-size: 24px;
+            vertical-alignment: TextVerticalAlignment.center;
+        }
+
+        isbn-edit := LineEdit {
+            placeholder-text: "ISBN";
+            font-size: 15px;
+            text<=>root.isbn;
+            width: 100%;  
+        }
+        
+        title-edit := LineEdit {
+            placeholder-text: "Title";
+            font-size: 15px;
+            text<=>root.bookTitle;
+            width: 100%;  
+        }
+
+        author-edit := LineEdit {
+            placeholder-text: "Authors";
+            font-size: 15px;
+            //不会写
+            width: 100%;
+        }
+
+        publisher-edit := LineEdit {
+            placeholder-text: "Publisher";
+            font-size: 15px;
+            text<=>root.publisher;
+            width: 100%;  
+        }
+
+        price-edit := LineEdit {
+            placeholder-text: "Price";
+            font-size: 15px;
+            text<=>root.price;
+            width: 100%;  
+        }
+
+        keywords-edit := LineEdit {
+            placeholder-text: "Keywords";
+            font-size: 15px;
+            //不会写
+            width: 100%;
+        }
+
+        add-widget := HorizontalLayout {
+            alignment: LayoutAlignment.end;
+            padding-top: 8px;
+            padding-bottom: 8px;
+            visible: root.is-open;
+            quantity := SpinBox {
+                minimum: 0;
+                maximum: 100;
+                value: 1;
+            }
+
+
+            add-button := Button {
+                text: "Add to Cart";
+                clicked => {
+                    root.add-book(root.isbn, root.bookTitle, root.authors, root.publisher, root.price, root.keywords, root.stock);
+                }
+            }
+
+            Button {
+                text: "Cancel";
+                padding: 8px;
+                clicked => {
+                    root.is-open = false;  // 关闭窗口
+                }
+            }
+        }
+    }
+}

@@ -1,0 +1,145 @@
+import { HorizontalBox, VerticalBox, Button, LineEdit, ListView} from "std-widgets.slint";
+
+export struct customerDetail {
+    id: int,
+    username: string,
+    password: string,
+    realname: string,
+    address: string,
+    email: string,
+    account-banlance: string,
+    credit-level: string,
+}
+
+export component customerItem inherits Rectangle {
+    in property <customerDetail> customer;
+    in property <length> item-width: 300px;
+    in property <bool> has-login;
+    in-out property <string> new-balance;
+    in-out property <string> credit-level;
+    callback edit-customer(int, string, string);
+
+    width: root.item-width;
+    VerticalBox {
+        alignment: LayoutAlignment.start;
+        Rectangle {
+            touch := TouchArea {
+                width: 100%;
+                height: 100%;
+            }
+
+            HorizontalBox {
+                alignment: LayoutAlignment.start;
+                
+                Rectangle {
+                    width: root.item-width;
+
+                    VerticalBox {
+                        alignment: LayoutAlignment.start;
+                        Text {
+                            text: "Id: " + root.customer.id;
+                            font-size: 15px;
+                        }
+
+                        Text {
+                            text: "Username: " + root.customer.username;
+                            font-size: 15px;
+                        }
+
+                        Text {
+                            text: "Password: " + root.customer.password;
+                            font-size: 15px;
+                        }
+
+                        Text {
+                            text: "Realname: " + root.customer.realname;
+                            font-size: 15px;
+                        }
+
+                        Text {
+                            text: "Address: " + root.customer.address;
+                            font-size: 15px;
+                        }
+
+                        Text {
+                            text: "Email: " + root.customer.email;
+                            font-size: 15px;
+                        }
+
+                        Text {
+                            text: "Current balance: " + root.customer.account-banlance;
+                            font-size: 15px;
+                        }
+
+                        Text {
+                            text: "Current credit level: " + root.customer.credit-level;
+                            font-size: 15px;
+                        }
+                        
+
+                        Text {
+                            text: "Banlance:" + root.customer.account-banlance;
+                            font-size: 15px;
+                            vertical-alignment: TextVerticalAlignment.center;
+                        }
+
+                        balance-edit := LineEdit {
+                            placeholder-text: "Enter new balance";
+                            font-size: 15px;
+                            text <=> root.new-balance;
+                        }
+                    
+                        Text {
+                            text: "Credit level: " + root.customer.credit-level;
+                            font-size: 15px;
+                            vertical-alignment: TextVerticalAlignment.center;
+                        }
+
+                        creditLevel-edit := LineEdit {
+                            placeholder-text: "Enter new credit level";
+                            font-size: 15px;
+                            text <=> root.credit-level;
+                        }
+                        
+                       HorizontalBox {
+                        alignment: LayoutAlignment.center;
+                        Button {
+                            text: "edit";
+                            clicked => {
+                                root.edit-customer(root.customer.id, root.new-balance, root.credit-level);
+                            }
+                        }
+                       }
+                    }
+                }
+            }
+        }
+    }
+}
+
+export component customerView inherits Window {
+    in property <bool> has-login;
+    in property <[customerDetail]> customers;
+    in property <length> item-width: 300px;
+    in property <length> window-width: 800px;
+    in property <length> window-height: 600px;
+
+    callback edit-customer(int, string, string);
+
+    out property <int> selected-customer-id: -1;
+    VerticalBox {
+        alignment: LayoutAlignment.start;
+        ListView {
+            preferred-height: root.window-height;
+            for customer[index] in customers: customerItem {
+                customer: customers[index];
+                has-login: root.has-login;
+                item-width: root.item-width;
+                edit-customer(id, new-balance, credit-level) => {
+                    edit-customer(id, new-balance, credit-level)
+                }
+            }
+        }
+    }
+
+}
