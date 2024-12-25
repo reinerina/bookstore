@@ -1,4 +1,6 @@
-use crate::entity::{Author, Book, BookInSeries, Keyword, Publisher, Supplier};
+use crate::entity::{
+    Author, Book, BookInSeries, Keyword, PriceInquiry, PriceInquiryStatus, Publisher, Supplier,
+};
 use mysql_async::prelude::{Query, WithParams};
 use mysql_async::{params, Conn};
 use mysql_common::bigdecimal::BigDecimal;
@@ -1063,5 +1065,151 @@ ORDER BY
             query.with(params).run(&mut *conn).await?;
         }
         Ok(Some(book_id))
+    }
+
+    pub async fn create_price_inquiry(
+        conn: &mut Conn,
+        customer_id: u32,
+        book_title: &str,
+        isbn: &str,
+        expected_price: BigDecimal,
+    ) -> anyhow::Result<Option<u32>> {
+        let query = r"INSERT INTO price_inquiries(custom_id,book_title,isbn,expected_price,inquiry_date) VALUES(:customer_id,:book_title,:isbn,:expected_price,NOW());";
+        let params = params! {
+            "customer_id" => customer_id,
+            "book_title" => book_title,
+            "isbn" => isbn,
+            "expected_price" => expected_price,
+        };
+        query.with(params).run(&mut *conn).await?;
+        let query = r"SELECT LAST_INSERT_ID() as inquiry_id;";
+        let inquiry_id = query.with(()).first::<u32, &mut Conn>(conn).await?;
+        Ok(inquiry_id)
+    }
+
+    pub async fn get_price_inquiry_list(conn: &mut Conn) -> anyhow::Result<Vec<PriceInquiry>> {
+        let query = r"SELECT price_inquiry_id,custom_id,book_title,isbn,expected_price,inquiry_date,status FROM price_inquiries;";
+        let result = query
+            .with(())
+            .map(
+                conn,
+                |(
+                    inquiry_id,
+                    custom_id,
+                    book_title,
+                    isbn,
+                    expected_price,
+                    inquiry_date,
+                    status,
+                )| {
+                    PriceInquiry {
+                        id: inquiry_id,
+                        customer_id: custom_id,
+                        book_title,
+                        isbn,
+                        expected_price,
+                        date: inquiry_date,
+                        status: {
+                            let status: String = status;
+                            status.parse().unwrap()
+                        },
+                    }
+                },
+            )
+            .await?;
+        Ok(result)
+    }
+
+    pub async fn get_price_inquiry_list_by_customer(
+        conn: &mut Conn,
+        customer_id: u32,
+    ) -> anyhow::Result<Vec<PriceInquiry>> {
+        let query = r"SELECT price_inquiry_id,custom_id,book_title,isbn,expected_price,inquiry_date,status FROM price_inquiries WHERE custom_id=:customer_id;";
+        let params = params! {
+            "customer_id" => customer_id,
+        };
+        let result = query
+            .with(params)
+            .map(
+                conn,
+                |(
+                    inquiry_id,
+                    custom_id,
+                    book_title,
+                    isbn,
+                    expected_price,
+                    inquiry_date,
+                    status,
+                )| {
+                    PriceInquiry {
+                        id: inquiry_id,
+                        customer_id: custom_id,
+                        book_title,
+                        isbn,
+                        expected_price,
+                        date: inquiry_date,
+                        status: {
+                            let status: String = status;
+                            status.parse().unwrap()
+                        },
+                    }
+                },
+            )
+            .await?;
+        Ok(result)
+    }
+
+    pub async fn get_price_inquiry_detail(
+        conn: &mut Conn,
+        inquiry_id: u32,
+    ) -> anyhow::Result<Option<PriceInquiry>> {
+        let query = r"SELECT price_inquiry_id,custom_id,book_title,isbn,expected_price,inquiry_date,status FROM price_inquiries WHERE inquiry_id=:inquiry_id;";
+        let params = params! {
+            "inquiry_id" => inquiry_id,
+        };
+        let mut result = query
+            .with(params)
+            .map(
+                conn,
+                |(
+                    inquiry_id,
+                    custom_id,
+                    book_title,
+                    isbn,
+                    expected_price,
+                    inquiry_date,
+                    status,
+                )| {
+                    PriceInquiry {
+                        id: inquiry_id,
+                        customer_id: custom_id,
+                        book_title,
+                        isbn,
+                        expected_price,
+                        date: inquiry_date,
+                        status: {
+                            let status: String = status;
+                            status.parse().unwrap()
+                        },
+                    }
+                },
+            )
+            .await?;
+        Ok(result.pop())
+    }
+
+    pub async fn update_price_inquiry_status(
+        conn: &mut Conn,
+        inquiry_id: u32,
+        status: PriceInquiryStatus,
+    ) -> anyhow::Result<Option<u32>> {
+        let query =
+            r"UPDATE price_inquiries SET status=:status WHERE price_inquiry_id=:inquiry_id;";
+        let params = params! {
+            "status" => status.to_string(),
+            "inquiry_id" => inquiry_id,
+        };
+        query.with(params).run(&mut *conn).await?;
+        Ok(Some(inquiry_id))
     }
 }

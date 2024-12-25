@@ -3,6 +3,7 @@ use crate::repo::BookRepo;
 use crate::service::AdminService;
 use crate::utils::Token;
 use mysql_async::Conn;
+use mysql_common::bigdecimal::BigDecimal;
 
 pub struct BookService;
 
@@ -30,6 +31,95 @@ impl BookService {
             },
             (_, _, false) => {
                 anyhow::bail!("permission denied: only staff or admin can add keyword")
+            }
+        }
+    }
+
+    pub async fn add_author(conn: &mut Conn, token: &Token, author: &str) -> anyhow::Result<u32> {
+        match AdminService::verify_admin(conn, token, AdminRole::Staff).await? {
+            (_, _, true) => match BookRepo::add_author(conn, author).await? {
+                Some(author_id) => Ok(author_id),
+                None => anyhow::bail!("add author failed"),
+            },
+            (_, _, false) => {
+                anyhow::bail!("permission denied: only staff or admin can add author")
+            }
+        }
+    }
+
+    pub async fn add_publisher(
+        conn: &mut Conn,
+        token: &Token,
+        publisher: &str,
+    ) -> anyhow::Result<u32> {
+        match AdminService::verify_admin(conn, token, AdminRole::Staff).await? {
+            (_, _, true) => match BookRepo::add_publisher(conn, publisher).await? {
+                Some(publisher_id) => Ok(publisher_id),
+                None => anyhow::bail!("add publisher failed"),
+            },
+            (_, _, false) => {
+                anyhow::bail!("permission denied: only staff or admin can add publisher")
+            }
+        }
+    }
+
+    pub async fn add_book(
+        conn: &mut Conn,
+        token: &Token,
+        isbn: &str,
+        title: &str,
+        authors: &Vec<u32>,
+        keywords: &Vec<u32>,
+        publisher: u32,
+        price: BigDecimal,
+        catalog: &str,
+        cover: &str,
+        is_onstore: bool,
+    ) -> anyhow::Result<u32> {
+        match AdminService::verify_admin(conn, token, AdminRole::Staff).await? {
+            (_, _, true) => {
+                match BookRepo::add_book(
+                    conn, isbn, title, authors, keywords, publisher, price, catalog, cover,
+                    is_onstore,
+                )
+                .await?
+                {
+                    Some(book_id) => Ok(book_id),
+                    None => anyhow::bail!("add book failed"),
+                }
+            }
+            (_, _, false) => anyhow::bail!("permission denied: only staff or admin can add book"),
+        }
+    }
+
+    pub async fn update_book(
+        conn: &mut Conn,
+        token: &Token,
+        book_id: u32,
+        isbn: &str,
+        title: &str,
+        authors: &Vec<u32>,
+        keywords: &Vec<u32>,
+        publisher: u32,
+        price: BigDecimal,
+        catalog: &str,
+        cover: &str,
+        is_onstore: bool,
+    ) -> anyhow::Result<()> {
+        match AdminService::verify_admin(conn, token, AdminRole::Staff).await? {
+            (_, _, true) => {
+                match BookRepo::update_book(
+                    conn, book_id, isbn, title, authors, keywords, publisher, price, catalog,
+                    cover, is_onstore,
+                )
+                .await?
+                {
+                    Some(_) => Ok(()),
+                    None => anyhow::bail!("update book failed"),
+                }
+            }
+            (_, _, false) => {
+                anyhow::bail!("permission denied: only staff or admin can update book")
             }
         }
     }
