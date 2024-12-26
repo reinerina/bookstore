@@ -1,18 +1,14 @@
 import { Button, VerticalBox, HorizontalBox, ListView, SpinBox} from "std-widgets.slint"; 
-
+import { SelectorComboBox } from "util-widget.slint";
 export struct Book {
     id: int,
     isbn: string,
     title: string,
     authors: [string],
     publisher: string,
-    suppliers: [string],
-    series: [string],
     price: string,
     keywords: [string],
     cover: image,
-    stock: int, 
-    catalog: string,
     cover: image,
 }
 
@@ -23,10 +19,8 @@ component BookListItem inherits Rectangle {
     in property <float> image-aspect-ratio;
     in property <length> item-width;
 
-
     callback clicked <=> touch.clicked;
-    callback edit-stock(int, int); 
-
+    callback edit-stock(int, int);
 
     states [
         pressed when touch.pressed: {
@@ -60,7 +54,8 @@ component BookListItem inherits Rectangle {
                         background: Colors.gray;
 
                         animate opacity { duration: 150ms; }
-                    }                    
+                    }
+
                     VerticalBox {
                         alignment: LayoutAlignment.start;
 
@@ -92,10 +87,6 @@ component BookListItem inherits Rectangle {
                             text: "Price: " + root.book.price;
                         }
 
-                        Text {
-                            text: "Stock: " + root.book.stock; 
-                        }
-
                         HorizontalLayout {
                             alignment: LayoutAlignment.start;
                             Text {
@@ -111,30 +102,10 @@ component BookListItem inherits Rectangle {
                 }
             }
         }
-
-        HorizontalLayout {
-            alignment: LayoutAlignment.end;
-            padding-top: 8px;
-            padding-bottom: 8px;
-            visible: root.has-login;
-
-            quantity := SpinBox {
-                minimum: 0;
-                maximum: 100; // 可以设置最大值
-                value: 1;
-            }
-
-            edit-stock-button := Button {
-                text: "Edit Stock";
-                clicked => {
-                    root.edit-stock(root.book.id, quantity.value); // 处理库存编辑
-                }
-            }
-        }
     }
 }
 
-export component InventoryManagement inherits Window { 
+export component InventoryManagement inherits Window {
     in property <bool> has-login;
     in property <[Book]> books;
     in property <length> image-width: 100px;
@@ -145,9 +116,8 @@ export component InventoryManagement inherits Window {
 
     out property <int> selected-book-id: -1;
 
-
     callback open-book-detail(int);
-    callback edit-stock(int, int); 
+    callback edit-stock(int, int);
     callback add-book();
     //add-book负责弹出添加新书籍的窗口
 
@@ -165,12 +135,12 @@ export component InventoryManagement inherits Window {
                 clicked => {
                     root.open-book-detail(book.id);
                 }
-                
                 edit-stock(id, quantity) => {
                     root.edit-stock(book.id, quantity); // 处理库存编辑
                 }
             }
         }
+
         HorizontalLayout {
             alignment: LayoutAlignment.end;
             padding-top: 8px;
@@ -184,4 +154,3 @@ export component InventoryManagement inherits Window {
         }
     }
 }
-

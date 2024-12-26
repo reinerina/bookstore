@@ -1,0 +1,153 @@
+import { HorizontalBox, VerticalBox, Button, LineEdit, ListView, ComboBox } from "std-widgets.slint";
+
+export struct CustomerInDetail {
+    id: int,
+    username: string,
+    realname: string,
+    address: string,
+    email: string,
+    account-banlance: string,
+    credit-level: int,
+}
+
+component customerItem inherits Rectangle {
+    in property <CustomerInDetail> customer;
+    in property <length> item-width: 300px;
+    in property <bool> has-login: true;
+    in-out property <string> new-balance;
+    callback edit-credit(int, int);
+    callback edit-balance(int, string);
+
+    states [
+        pressed when touch.pressed: {
+            state.opacity: 0.6;
+        }
+        hover when touch.has-hover: {
+            state.opacity: 0.4;
+        }
+    ]
+
+    width: root.item-width;
+    VerticalBox {
+        alignment: LayoutAlignment.start;
+        Rectangle {
+            touch := TouchArea {
+                width: 100%;
+                height: 100%;
+            }
+
+            state := Rectangle {
+                opacity: 0;
+                background: Colors.gray;
+
+                animate opacity { duration: 150ms; }
+            }
+
+            HorizontalBox {
+                alignment: LayoutAlignment.start;
+                Rectangle {
+
+                    VerticalBox {
+                        alignment: LayoutAlignment.start;
+                        Text {
+                            text: "Id: " + root.customer.id;
+                        }
+
+                        Text {
+                            text: "Username: " + root.customer.username;
+                        }
+
+                        Text {
+                            text: "Name: " + root.customer.realname;
+                        }
+
+                        Text {
+                            text: "Address: " + root.customer.address;
+                        }
+
+                        Text {
+                            text: "Email: " + root.customer.email;
+                        }
+
+                        Text {
+                            text: "Balance: " + root.customer.account-banlance;
+                        }
+
+                        Text {
+                            text: "Credit level: " + root.customer.credit-level;
+                        }
+                    }
+                }
+            }
+        }
+
+        if (root.has-login):VerticalLayout {
+            alignment: LayoutAlignment.end;
+
+            HorizontalLayout {
+                alignment: LayoutAlignment.end;
+                LineEdit {
+                    text <=> root.new-balance;
+                }
+
+                Button {
+                    text: "Edit";
+                    clicked => {
+                        root.edit-balance(root.customer.id, root.new-balance);
+                    }
+                }
+            }
+
+            HorizontalLayout {
+                alignment: LayoutAlignment.end;
+                Text {
+                    text: "New Credit Level: ";
+                    vertical-alignment: TextVerticalAlignment.center;
+                }
+
+                new-level := ComboBox {
+                    model: ["1", "2", "3", "4", "5"];
+                }
+
+                Button {
+                    text: "Edit";
+                    clicked => {
+                        root.edit-credit(root.customer.id, new-level.current-index + 1);
+                    }
+                }
+            }
+        }
+    }
+}
+
+export component customerView inherits Window {
+    in property <bool> has-login;
+    in property <[CustomerInDetail]> customers;
+    in property <length> item-width: 300px;
+    in property <length> window-width: 800px;
+    in property <length> window-height: 600px;
+
+    callback edit-credit(int, int);
+    callback edit-balance(int, string);
+
+    out property <int> selected-customer-id: -1;
+    VerticalBox {
+        alignment: LayoutAlignment.start;
+        ListView {
+            preferred-height: root.window-height;
+            for customer[index] in customers: customerItem {
+                customer: customers[index];
+                has-login: root.has-login;
+                item-width: root.item-width;
+
+                edit-credit(id, level) => {
+                    root.edit-credit(id, level);
+                }
+
+                edit-balance(id, balance) => {
+                    root.edit-balance(id, balance);
+                }
+            }
+        }
+    }
+}

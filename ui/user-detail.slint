@@ -1,10 +1,9 @@
 import { HorizontalBox, VerticalBox, Button } from "std-widgets.slint";
 
 export struct UserDetail {
+    admin_id: int,
     username: string,
-    name: string,
-    address: string,
-    email: string,
+    role: string,
 }
 
 export component UserDetailView inherits Window {
@@ -13,6 +12,7 @@ export component UserDetailView inherits Window {
 
     callback user-logout();
     callback get-user-detail();
+    callback user-register();
 
     width: 100%;
     height: 100%;
@@ -27,19 +27,15 @@ export component UserDetailView inherits Window {
             alignment: LayoutAlignment.center;
             VerticalBox {
                 Text {
+                    text: "Admin ID: " + root.user-detail.admin_id;
+                }
+
+                Text {
                     text: "Username: " + root.user-detail.username;
                 }
 
                 Text {
-                    text: "Name: " + root.user-detail.name;
-                }
-
-                Text {
-                    text: "Address: " + root.user-detail.address;
-                }
-
-                Text {
-                    text: "Email: " + root.user-detail.email;
+                    text: "Role: " + root.user-detail.role;
                 }
 
                 Text {
@@ -47,10 +43,19 @@ export component UserDetailView inherits Window {
                     visible: root.error-logout;
                 }
 
-                Button {
-                    text: "Logout";
-                    clicked => {
-                        root.user-logout();
+                HorizontalBox {
+                    Button {
+                        text: "Logout";
+                        clicked => {
+                            root.user-logout();
+                        }
+                    }
+
+                    Button {
+                        text: "Register";
+                        clicked => {
+                            root.user-register();
+                        }
                     }
                 }
             }

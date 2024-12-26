@@ -1,0 +1,410 @@
+import { VerticalBox, HorizontalBox, ListView, SpinBox, Button, ComboBox, LineEdit, CheckBox, TextEdit } from "std-widgets.slint";
+import { SelectorComboBox } from "util-widget.slint";
+
+export struct KeywordInEdit {
+    id: int,
+    keyword: string,
+}
+
+export struct AuthorInEdit {
+    id: int,
+    name: string,
+}
+
+export struct SupplierInEdit {
+    id: int,
+    name: string,
+}
+
+export struct SeriesInEdit {
+    id: int,
+    name: string,
+    column: int,
+}
+
+export struct PublisherInEdit {
+    id: int,
+    name: string,  
+}
+
+export struct BookInEdit {
+    id: int,
+    isbn: string,
+    title: string,
+    authors: [AuthorInEdit],
+    publisher: PublisherInEdit,
+    suppliers: [SupplierInEdit],
+    series: [SeriesInEdit],
+    price: string,
+    keywords: [KeywordInEdit],
+    catalog: string,
+    cover: string,
+    on-store: bool,
+}
+
+export component BookEditView inherits Window {
+    in property <BookInEdit> book;
+
+    in-out property <string> isbn;
+    in-out property <string> book-title;
+
+    in property <[string]> authors;
+    in property <[int]> author-ids;
+    in property <[string]> suppliers;
+    in property <[int]> supplier-ids;
+    in property <[string]> series;
+    in property <[int]> series-ids;
+    in property <[string]> publishers;
+    in property <[int]> publisher-ids;
+    in-out property <string> price;
+    in property <[string]> keywords;
+    in property <[int]> keyword-ids;
+    in-out property <string> catalog;
+    in-out property <string> cover;
+    in-out property <bool> on-store;
+
+    callback edit-book(BookInEdit);
+    callback get-author-list();
+    callback get-supplier-list();
+    callback get-series-list();
+    callback get-publisher-list();
+    callback get-keyword-list();
+
+    callback add-author(BookInEdit, int, string);
+    callback remove-author(BookInEdit, int);
+    callback add-supplier(BookInEdit, int, string);
+    callback remove-supplier(BookInEdit, int);
+    callback add-series(BookInEdit, int, string, int);
+    callback remove-series(BookInEdit, int);
+    callback change-publisher(BookInEdit, int, string);
+    callback add-keyword(BookInEdit, int, string);
+    callback remove-keyword(BookInEdit, int);
+
+    changed book => {
+        root.isbn = root.book.isbn;
+        root.book-title = root.book.title;
+        root.price = root.book.price;
+        root.catalog = root.book.catalog;
+        root.cover = root.book.cover;
+        root.on-store = root.book.on-store;
+    }
+
+    VerticalBox {
+        alignment: LayoutAlignment.start;
+
+        HorizontalBox {
+            alignment: LayoutAlignment.center;
+            Text {
+                vertical-alignment: TextVerticalAlignment.center;
+                text: "ISBN";
+            }
+
+            LineEdit {
+                text <=> root.isbn;
+                placeholder-text: "ISBN";
+            }
+
+            Text {
+                vertical-alignment: TextVerticalAlignment.center;
+                text: "Title";
+            }
+
+            LineEdit {
+                text <=> root.book-title;
+                placeholder-text: "Title";
+            }
+        }
+
+        HorizontalBox {
+            alignment: LayoutAlignment.center;
+            Text {
+                vertical-alignment: TextVerticalAlignment.center;
+                text: "Price";
+            }
+
+            LineEdit {
+                text <=> root.price;
+                placeholder-text: "Price";
+            }
+
+            Text {
+                vertical-alignment: TextVerticalAlignment.center;
+                text: "Cover";
+            }
+
+            LineEdit {
+                text <=> root.cover;
+                placeholder-text: "Cover";
+            }
+        }
+
+        HorizontalBox {
+            alignment: LayoutAlignment.center;
+            Text {
+                vertical-alignment: TextVerticalAlignment.center;
+                text: "Catalog";
+            }
+
+            TextEdit {
+                height: 100px;
+                width: 360px;
+                text <=> root.catalog;
+                placeholder-text: "Catalog";
+            }
+        }
+
+        HorizontalBox {
+            alignment: LayoutAlignment.center;
+            Text {
+                vertical-alignment: TextVerticalAlignment.center;
+                text: "Authors";
+            }
+
+            ListView {
+                width: 200px;
+                height: 100px;
+                for author[index] in root.book.authors: HorizontalLayout {
+                    Text {
+                        text: author.name;
+                        vertical-alignment: TextVerticalAlignment.center;
+                    }
+
+                    Button {
+                        text: "Remove";
+                        height: 20px;
+                        width: 72px;
+                        clicked => {
+                            root.remove-author(root.book, author.id);
+                        }
+                    }
+                }
+            }
+
+            VerticalLayout {
+                alignment: LayoutAlignment.center;
+                HorizontalBox {
+                    alignment: LayoutAlignment.center;
+                    author-selector := SelectorComboBox {
+                        items: root.authors;
+                        item-ids: root.author-ids;
+                        get-item-list => {
+                            root.get-author-list();
+                        }
+                    }
+
+                    Button {
+                        text: "Add";
+                        clicked => {
+                            root.add-author(root.book, author-selector.item-ids[author-selector.current-index], author-selector.items[author-selector.current-index]);
+                        }
+                    }
+                }
+            }
+        }
+
+        HorizontalBox {
+            alignment: LayoutAlignment.center;
+            Text {
+                vertical-alignment: TextVerticalAlignment.center;
+                text: "Suppliers";
+            }
+
+            VerticalBox {
+                width: 200px;
+                height: 100px;
+                for supplier[index] in root.book.suppliers: HorizontalLayout {
+                    Text {
+                        text: supplier.name;
+                        vertical-alignment: TextVerticalAlignment.center;
+                    }
+
+                    Button {
+                        text: "Remove";
+                        height: 20px;
+                        width: 72px;
+                        clicked => {
+                            root.remove-supplier(root.book, supplier.id);
+                        }
+                    }
+                }
+            }
+
+            VerticalLayout {
+                alignment: LayoutAlignment.center;
+                HorizontalBox {
+                    alignment: LayoutAlignment.center;
+                    supplier-selector := SelectorComboBox {
+                        items: root.suppliers;
+                        item-ids: root.supplier-ids;
+                        get-item-list => {
+                            root.get-supplier-list();
+                        }
+                    }
+
+                    Button {
+                        text: "Add";
+                        clicked => {
+                            root.add-supplier(root.book, supplier-selector.item-ids[supplier-selector.current-index], supplier-selector.items[supplier-selector.current-index]);
+                        }
+                    }
+                }
+            }
+        }
+
+        HorizontalBox {
+            alignment: LayoutAlignment.center;
+            Text {
+                vertical-alignment: TextVerticalAlignment.center;
+                text: "Series";
+            }
+
+            ListView {
+                width: 200px;
+                height: 100px;
+                for series[index] in root.book.series: HorizontalLayout {
+                    Text {
+                        text: series.name + " \{series.column}";
+                        vertical-alignment: TextVerticalAlignment.center;
+                    }
+
+                    Button {
+                        text: "Remove";
+                        height: 20px;
+                        width: 72px;
+                        clicked => {
+                            root.remove-series(root.book, series.id);
+                        }
+                    }
+                }
+            }
+
+            VerticalLayout {
+                alignment: LayoutAlignment.center;
+                HorizontalBox {
+                    alignment: LayoutAlignment.center;
+                    Text {
+                        text: "Column";
+                        vertical-alignment: TextVerticalAlignment.center;
+                    }
+
+                    column := SpinBox {
+                        minimum: 0;
+                        maximum: 100;
+                        value: 0;
+                    }
+                }
+                HorizontalBox {
+                    alignment: LayoutAlignment.center;
+                    series-selector := SelectorComboBox {
+                        items: root.series;
+                        item-ids: root.series-ids;
+                        get-item-list => {
+                            root.get-series-list();
+                        }
+                    }
+
+                    Button {
+                        text: "Add";
+                        clicked => {
+                            root.add-series(root.book, root.series-ids[series-selector.current-index], root.series[series-selector.current-index], column.value);
+                        }
+                    }
+                }
+            }
+        }
+
+        HorizontalBox {
+            alignment: LayoutAlignment.center;
+            Text {
+                vertical-alignment: TextVerticalAlignment.center;
+                text: "Publisher " + root.book.publisher.name;
+            }
+
+            publisher-changer := SelectorComboBox {
+                items: root.publishers;
+                item-ids: root.publisher-ids;
+                get-item-list => {
+                    root.get-publisher-list();
+                }
+            }
+
+            Button {
+                text: "Change";
+                clicked => {
+                    root.change-publisher(root.book, publisher-changer.item-ids[publisher-changer.current-index], publisher-changer.items[publisher-changer.current-index]);
+                }
+            }
+        }
+
+        HorizontalBox {
+            alignment: LayoutAlignment.center;
+            Text {
+                vertical-alignment: TextVerticalAlignment.center;
+                text: "Keywords";
+            }
+
+            ListView {
+                width: 200px;
+                height: 100px;
+                for keyword[index] in root.book.keywords: HorizontalLayout {
+                    Text {
+                        text: keyword.keyword;
+                        vertical-alignment: TextVerticalAlignment.center;
+                    }
+
+                    Button {
+                        text: "Remove";
+                        height: 20px;
+                        width: 72px;
+                        clicked => {
+                            root.remove-keyword(root.book, keyword.id);
+                        }
+                    }
+                }
+            }
+
+            VerticalLayout {
+                alignment: LayoutAlignment.center;
+                HorizontalBox {
+                    alignment: LayoutAlignment.center;
+                    keyword-selector := SelectorComboBox {
+                        items: root.keywords;
+                        item-ids: root.keyword-ids;
+                        get-item-list => {
+                            root.get-keyword-list();
+                        }
+                    }
+
+                    Button {
+                        text: "Add";
+                        clicked => {
+                            root.add-keyword(root.book, keyword-selector.item-ids[keyword-selector.current-index], keyword-selector.items[keyword-selector.current-index]);
+                        }
+                    }
+                }
+            }
+        }
+
+        HorizontalBox {
+            alignment: LayoutAlignment.center;
+            Text {
+                vertical-alignment: TextVerticalAlignment.center;
+                text: "On Store";
+            }
+
+            CheckBox {
+                checked <=> root.on-store;
+            }
+        }
+
+        HorizontalBox {
+            alignment: LayoutAlignment.center;
+            Button {
+                text: "Save";
+                clicked => {
+                    root.edit-book(root.book);
+                }
+            }
+        }
+    }
+}

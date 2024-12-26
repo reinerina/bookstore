@@ -1,0 +1,17 @@
+import { ComboBox } from "std-widgets.slint";
+
+
+
+export component SelectorComboBox inherits ComboBox {
+    in-out property <[string]> items;
+    in-out property <[int]> item-ids;
+
+    callback get-item-list();
+
+    changed has-focus => {
+        if (root.has-focus) {
+            root.get-item-list();
+        }
+    }
+    model <=> root.items;
+}

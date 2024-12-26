@@ -1,9 +1,15 @@
 import { VerticalBox, Button, ListView } from "std-widgets.slint";
-import {BookInCart} from "admin-cart.slint";
 
-export struct customerOrder {
+export struct BookInOrder {
+    id: int,
+    quantity: int,
+    price: string,
+}
+
+export struct CustomerOrder {
     id: int,
     customer_id: string,
+    items: [BookInOrder],
     discount_percentage: string,
     discount_amount: string,
     original_price: string,
@@ -11,18 +17,16 @@ export struct customerOrder {
     order_date: string,
     payment_status: string,
     shipping_status: string,
-    books: [BookInCart],
 }
 
 component singleOrderView inherits Rectangle {
-    in property <customerOrder> order;
+    in property <CustomerOrder> order;
     in property <length> item-width;
     callback delete-customer-order(string);
     callback send-goods(string);
 
     width: root.item-width;
     callback clicked <=> touch.clicked;
-    
 
     states [
         pressed when touch.pressed: {
@@ -56,11 +60,12 @@ component singleOrderView inherits Rectangle {
                     Text {
                         text: "Order ID: " + root.order.id;
                     }
+
                     Text {
                         text: "Order Date: " + root.order.order_date;
                     }
 
-                    Text{
+                    Text {
                         text: "Customer id: " + root.order.customer_id;
                     }
 
@@ -91,18 +96,19 @@ component singleOrderView inherits Rectangle {
                         text: "Original Price: " + root.order.original_price;
                     }
                 }
+
                 VerticalLayout {
                     alignment: LayoutAlignment.start;
-                    for BookInCart[index] in root.order.books: Rectangle {
+                    for item[index] in root.order.items: Rectangle {
                         width: root.item-width;
-                        Text{
-                            text: "Book Title: " + root.order.books[index].title;
+                        Text {
+                            text: "Book id: " + root.order.items[index].id;
                         }
-                        Text{
-                            text: "Book quantity: " + root.order.books[index].quantity;
+
+                        Text {
+                            text: "Book quantity: " + root.order.items[index].quantity;
                         }
                     }
-                    
                 }
             }
         }
@@ -131,7 +137,7 @@ component singleOrderView inherits Rectangle {
 
 export component customerOrderView inherits Window {
     in property <length> item-width: 300px;
-    in property <[customerOrder]> orders;
+    in property <[CustomerOrder]> orders;
     in property <length> window-width: 800px;
     in property <length> window-height: 600px;
     callback delete-customer-order(string);
@@ -145,14 +151,13 @@ export component customerOrderView inherits Window {
             for order[index] in root.orders: singleOrderView {
                 order: orders[index];
                 item-width: root.item-width;
-                delete-customer-order =>{
+                delete-customer-order => {
                     root.delete-customer-order(order.id);
                 }
 
-                send-goods =>{
+                send-goods => {
                     root.send-goods(order.id);
                 }
-
             }
         }
     }

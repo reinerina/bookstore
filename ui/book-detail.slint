@@ -1,0 +1,242 @@
+import { VerticalBox, HorizontalBox, ListView, SpinBox, Button } from "std-widgets.slint";
+import { SelectorComboBox } from "util-widget.slint";
+
+export struct LocationInDetail {
+    id: int,
+    description: string,
+    quantity: int,
+}
+
+export struct BookInDetail {
+        id: int,
+        isbn: string,
+        title: string,
+        authors: [string],
+        publisher: string,
+        suppliers: [string],
+        series: [string],
+        price: string,
+        keywords: [string],
+        catalog: string,
+        cover: image,
+        locations: [LocationInDetail],
+        on-store: bool,
+}
+
+export component BookDetailView inherits Rectangle {
+    in property <BookInDetail> book;
+    in property <length> image-width: 100px;
+    in property <float> image-aspect-ratio: 1;
+    in property <length> item-width: 300px;
+
+    in property <[string]> locations;
+    in property <[int]> location-ids;
+
+    callback edit-stock(int, int, int);
+    callback transfer-stock(int, int, int, int);
+    callback open-edit-book(int);
+    callback get-location-list();
+
+    width: root.item-width;
+
+    VerticalBox {
+        alignment: LayoutAlignment.start;
+        Rectangle {
+            touch := TouchArea {
+                width: 100%;
+                height: 100%;
+            }
+
+            HorizontalBox {
+                alignment: LayoutAlignment.start;
+                Image {
+                    width: root.image-width;
+                    height: root.image-width / root.image-aspect-ratio;
+                    source: root.book.cover;
+                }
+
+                Rectangle {
+                    width: root.item-width - root.image-width;
+
+                    VerticalBox {
+                        alignment: LayoutAlignment.start;
+                        Text {
+                            text: "ISBN: " + root.book.isbn;
+                        }
+
+                        Text {
+                            text: "Title: " + root.book.title;
+                        }
+
+                        HorizontalLayout {
+                            alignment: LayoutAlignment.start;
+                            Text {
+                                text: "Authors: ";
+                            }
+
+                            for author[index] in root.book.authors: Text {
+                                text: index < root.book.authors.length - 1 ? author + ", " : author;
+                            }
+                        }
+
+                        Text {
+                            text: "Publisher: " + root.book.publisher;
+                        }
+
+                        Text {
+                            text: "Price: " + root.book.price;
+                        }
+
+                        HorizontalLayout {
+                            alignment: LayoutAlignment.start;
+                            Text {
+                                text: "Keywords: ";
+                            }
+
+                            for keyword[index] in root.book.keywords: Text {
+                                text: index < root.book.keywords.length - 1 ? keyword + ", " : keyword;
+                            }
+                        }
+
+                        Text {
+                            text: "Catalog: " + root.book.catalog;
+                        }
+
+                        HorizontalLayout {
+                            alignment: LayoutAlignment.start;
+                            Text {
+                                text: "Suppliers: ";
+                            }
+
+                            for supplier[index] in root.book.suppliers: Text {
+                                text: index < root.book.suppliers.length - 1 ? supplier + ", " : supplier;
+                            }
+                        }
+
+                        HorizontalLayout {
+                            alignment: LayoutAlignment.start;
+                            Text {
+                                text: "Series: ";
+                            }
+
+                            for series[index] in root.book.series: Text {
+                                text: index < root.book.series.length - 1 ? series + ", " : series;
+                            }
+                        }
+
+                        Text {
+                            text: "On Store: " + (root.book.on-store ? "Yes" : "No");
+                        }
+                    }
+                }
+            }
+        }
+
+        HorizontalLayout {
+            alignment: LayoutAlignment.end;
+            Button {
+                text: "Edit";
+                clicked => {
+                    root.open-edit-book(root.book.id);
+                }
+            }
+        }
+
+        ListView {
+            preferred-height: root.height;
+            for location[index] in root.book.locations: Rectangle {
+                width: 100%;
+                VerticalBox {
+                    alignment: LayoutAlignment.start;
+                    HorizontalLayout {
+                        alignment: LayoutAlignment.start;
+                        Text {
+                            text: "Location: " + location.description;
+                        }
+                    }
+
+                    HorizontalLayout {
+                        alignment: LayoutAlignment.start;
+                        Text {
+                            text: "Quantity: " + location.quantity;
+                        }
+                    }
+
+                    HorizontalLayout {
+                        alignment: LayoutAlignment.end;
+                        stock-change := SpinBox {
+                            minimum: 0;
+                            maximum: 100;
+                            value: 0;
+                        }
+                    }
+
+                    HorizontalBox {
+                        alignment: LayoutAlignment.end;
+
+                        Button {
+                            text: "Transfer";
+                            clicked => {
+                                root.transfer-stock(root.book.id, location.id, target-location.item_ids[target-location.current-index], stock-change.value);
+                            }
+                        }
+
+                        Text {
+                            text: "to";
+                            vertical-alignment: TextVerticalAlignment.center;
+                        }
+
+                        target-location := SelectorComboBox {
+                            items: root.locations;
+                            item-ids: root.location-ids;
+
+                            get-item-list => {
+                                root.get-location-list();
+                            }
+                        }
+
+                        Button {
+                            text: "In Stock";
+                            clicked => {
+                                root.edit-stock(root.book.id, location.id, stock-change.value);
+                            }
+                        }
+
+                        Button {
+                            text: "Out Stock";
+                            clicked => {
+                                root.edit-stock(root.book.id, location.id, -stock-change.value);
+                            }
+                        }
+
+                        padding-right: 0px;
+                    }
+                }
+            }
+        }
+
+        HorizontalLayout {
+            alignment: LayoutAlignment.end;
+            Text {
+                text: "New Location: ";
+                vertical-alignment: TextVerticalAlignment.center;
+            }
+
+            new-location := SelectorComboBox {
+                items: root.locations;
+                item-ids: root.location-ids;
+
+                get-item-list => {
+                    root.get-location-list();
+                }
+            }
+
+            Button {
+                text: "Add";
+                clicked => {
+                    root.edit-stock(root.book.id, new-location.item_ids[new-location.current-index], 0);
+                }
+            }
+        }
+    }
+}

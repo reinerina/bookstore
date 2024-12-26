@@ -1,4 +1,4 @@
-import { Button, VerticalBox, HorizontalBox, ListView, StandardButton, AboutSlint } from "std-widgets.slint";
+import { Button, VerticalBox, HorizontalBox, ListView, StandardButton, AboutSlint, LineEdit, ComboBox } from "std-widgets.slint";
 import { SideBar } from "side-bar.slint";
 import { UserView } from "user.slint";
 import { UserDetail } from "user-detail.slint";
@@ -6,13 +6,15 @@ import { InventoryManagement, Book } from "book-management.slint";
 import { BookCartView, BookInCart } from "admin-cart.slint";
 import { BookRestockList} from "purchase-list.slint";
 import {restockOrder, BookItem, restockHistory} from "restock-order.slint";
-import {customerView, customerDetail} from "customer-view.slint";
+import {customerView, CustomerInDetail} from "customer-view.slint";
 import {customerOrderView} from "customer-order.slint";
 import { OrderHistory } from "order-history.slint";
 import { supplierView } from "supplier-view.slint";
 import { BookDetailView, BookInDetail } from "book-detail.slint";
 import { BookSearchView, BookInSearch } from "search-book.slint";
 import { CustomerInSearch, CustomerSearchView } from "search-customer.slint";
+import { BookInEdit, AuthorInEdit, SupplierInEdit, SeriesInEdit, BookEditView } from "book-edit.slint";
+import { BookInAdd, AuthorInAdd, SupplierInAdd, SeriesInAdd, BookAddView } from "add-book.slint";
 
 export component MainWindow inherits Window {
 
@@ -32,7 +34,7 @@ export component MainWindow inherits Window {
     in property <[OrderHistory]> orders;
     in property <[restockOrder]> restock-orders;
 
-    in property <[customerDetail]> customers;   //customer-view.slint中的顾客信息结构
+    in property <[CustomerInDetail]> customers;   //customer-view.slint中的顾客信息结构
 
     out property <int> selected-book-id: -1;
 
@@ -48,11 +50,10 @@ export component MainWindow inherits Window {
     callback user-logout();
     callback get-user-detail();
 
-    callback open-book-detail(string);
+    callback open-book-detail(int);
     callback edit-stock(string, int);
     callback add-book();
 
-  
     callback get-book-list();
     callback add-to-cart(string, int);
 
@@ -80,7 +81,9 @@ export component MainWindow inherits Window {
     callback get-search-book-list(string, int);
 
     callback open-customer-detail(int);
-    callback get-search-customer-list(string, int); 
+    callback get-search-customer-list(string, int);
+    callback edit-credit(int, int);
+    callback edit-balance(int, string);
 
     title: "Bookstore Admin App";
     preferred-width: 800px;
@@ -127,6 +130,8 @@ export component MainWindow inherits Window {
                 alignment: LayoutAlignment.center;
                 //Login & Admin Info
                 if (side-bar.current-item == 0):admin-info := UserView {
+                    preferred-width: root.width;
+                    preferred-height: root.height;
                     error-login: root.error-login;
                     error-logout: root.error-logout;
                     has-login: root.has-login;
@@ -159,6 +164,8 @@ export component MainWindow inherits Window {
                         root.get-book-list();
                     }
 
+                    preferred-width: root.width;
+                    preferred-height: root.height;
                     books: root.books;
                     has-login: root.has-login;
                     image-width: 150px;
@@ -174,7 +181,7 @@ export component MainWindow inherits Window {
                     }
 
                     edit-stock(id, quantity) => {
-                        root.edit-stock(id, quantity); 
+                        root.edit-stock(id, quantity);
                     }
 
                     add-book => {
@@ -189,7 +196,9 @@ export component MainWindow inherits Window {
                         root.get-book-list();
                     }
 
-                    books: root.books;   
+                    preferred-width: root.width;
+                    preferred-height: root.height;
+                    books: root.books;
                     image-width: 150px;
                     image-aspect-ratio: 1;
                     item-width: root.width - side-bar.width - 50px;
@@ -199,17 +208,17 @@ export component MainWindow inherits Window {
                     add-to-cart(id, quantity) => {
                         root.update-cart-book(id, quantity, root.books-in-cart);
                     }
-
-                
                 }
 
                 //Admin Cart
                 if (side-bar.current-item == 3):book-cart-view := BookCartView {
-                    //补充库存的购物车列表，和之前的BookCartView一样（admin-cart.slint）
+                    //补充库存的购物车列表，和之前的BookCartView一样（ui-cart.slint）
                     init => {
                         root.get-cart-book-list();
                     }
 
+                    preferred-width: root.width;
+                    preferred-height: root.height;
                     books: root.books-in-cart;
                     image-width: 150px;
                     image-aspect-ratio: 1;
@@ -236,6 +245,8 @@ export component MainWindow inherits Window {
                         root.get-restock-order-list();
                     }
 
+                    preferred-width: root.width;
+                    preferred-height: root.height;
                     orders: root.restock-orders;
                     window-width: root.width - side-bar.width - 50px;
                     window-height: root.height;
@@ -270,12 +281,20 @@ export component MainWindow inherits Window {
                         root.get-customers-list();
                     }
 
+                    preferred-width: root.width;
+                    preferred-height: root.height;
                     customers: root.customers;
                     window-width: root.width - side-bar.width - 50px;
                     window-height: root.height;
                     item-width: root.width - side-bar.width - 50px;
-                    edit-customer(id, new-balance, credit-level) => {
-                        root.edit-customer(id, new-balance, credit-level);
+                    has-login: root.has-login;
+
+                    edit-credit(id, level) => {
+                        root.edit-credit(id, level);
+                    }
+
+                    edit-balance(id, balance) => {
+                        root.edit-balance(id, balance);
                     }
                 }
 
@@ -284,6 +303,9 @@ export component MainWindow inherits Window {
                     init => {
                         root.get-customer-orders-list();
                     }
+
+                    preferred-width: root.width;
+                    preferred-height: root.height;
                     window-width: root.width - side-bar.width - 50px;
                     window-height: root.height;
                     item-width: root.width - side-bar.width - 50px;
@@ -291,7 +313,7 @@ export component MainWindow inherits Window {
                         root.delete-customer-order(id);
                     }
 
-                    send-goods(id) =>{
+                    send-goods(id) => {
                         root.send-goods(id);
                     }
                 }
@@ -302,16 +324,20 @@ export component MainWindow inherits Window {
                         root.get-supplier-list();
                     }
 
+                    preferred-width: root.width;
+                    preferred-height: root.height;
                     window-width: root.width - side-bar.width - 50px;
                     window-height: root.height;
                     item-width: root.width - side-bar.width - 50px;
-                    open-supplier-detail(id) =>{
+                    open-supplier-detail(id) => {
                         root.open-supplier-detail(id);
                     }
                 }
 
                 if (side-bar.current-item == 8):book-search-view := BookSearchView {
 
+                    preferred-width: root.width;
+                    preferred-height: root.height;
                     books: root.books-in-search;
                     image-width: 150px;
                     image-aspect-ratio: 1;
@@ -333,6 +359,8 @@ export component MainWindow inherits Window {
 
                 if (side-bar.current-item == 9):customer-search-view := CustomerSearchView {
 
+                    preferred-width: root.width;
+                    preferred-height: root.height;
                     customersSearched: root.customers-in-search;
                     item-width: root.width - side-bar.width - 50px;
                     window-height: root.height;
@@ -349,7 +377,6 @@ export component MainWindow inherits Window {
                         root.get-search-customer-list(keyword, mode);
                     }
                 }
-
             }
         }
     }
@@ -361,7 +388,16 @@ export component BookDetailWindow inherits Window {
     in property <float> image-aspect-ratio: 1;
     in property <length> item-width: 600px;
     in property <length> window-width: 600px;
-    in property <length> window-height: 238px;
+    in property <length> window-height: 600px;
+
+    in property <[string]> locations;
+    in property <[int]> location-ids;
+
+    callback edit-stock(int, int, int);
+    callback transfer-stock(int, int, int, int);
+    callback open-edit-book(int);
+    callback get-location-list();
+    callback get-book-detail();
 
     title: "Book \{book.title} Detail";
     preferred-width: root.window-width;
@@ -375,7 +411,343 @@ export component BookDetailWindow inherits Window {
         image-width: root.image-width;
         image-aspect-ratio: root.image-aspect-ratio;
         item-width: root.window-width - 50px;
-        preferred-height: root.window-height;
+        preferred-height: root.height;
+
+        locations: root.locations;
+        location-ids: root.location-ids;
+
+        edit-stock(book-id, location-id, quantity) => {
+            root.edit-stock(book-id,location-id,quantity);
+        }
+
+        transfer-stock(book-id, from-location-id, to-location-id, quantity) => {
+            root.transfer-stock(book-id, from-location-id, to-location-id, quantity);
+        }
+
+        open-edit-book(id) => {
+            root.open-edit-book(id);
+        }
+
+        get-location-list => {
+            root.get-location-list();
+        }
+    }
+}
+
+export component RegisterWindow inherits Window {
+    in property <string> register-message;
+    property <string> username;
+    property <string> password;
+    property <int> role;
+
+    callback register(string, string, int);
+
+    title: "Register";
+    width: 400px;
+    height: 300px;
+    VerticalBox {
+        alignment: LayoutAlignment.center;
+        padding: 16px;
+        spacing: 12px;
+
+        Text {
+            text: "Register";
+            font-size: 24px;
+            vertical-alignment: TextVerticalAlignment.center;
+        }
+
+        username-edit := LineEdit {
+            placeholder-text: "Username";
+            font-size: 15px;
+            text <=> root.username;
+            width: 100%;
+        }
+
+        password-edit := LineEdit {
+            placeholder-text: "Password";
+            font-size: 15px;
+            text <=> root.password;
+            width: 100%;
+        }
+
+        ComboBox {
+            model: ["Admin", "Staff"];
+            current-index <=> root.role;
+        }
+
+        Text {
+            text: root.register-message;
+            vertical-alignment: TextVerticalAlignment.center;
+        }
+
+        HorizontalLayout {
+            alignment: LayoutAlignment.center;
+            register-button := Button {
+                text: "Register";
+                clicked => {
+                    root.register(root.username, root.password, root.role);
+                }
+            }
+        }
+    }
+}
+
+export component BookEditWindow inherits Window {
+    in property <string> edit-message;
+
+    in property <BookInEdit> book;
+
+    in property <[string]> authors;
+    in property <[int]> author-ids;
+    in property <[string]> suppliers;
+    in property <[int]> supplier-ids;
+    in property <[string]> series;
+    in property <[int]> series-ids;
+    in property <[string]> publishers;
+    in property <[int]> publisher-ids;
+    in property <[string]> keywords;
+    in property <[int]> keyword-ids;
+    in-out property <string> isbn;
+    in-out property <string> book-title;
+    in-out property <string> price;
+    in-out property <string> catalog;
+    in-out property <string> cover;
+    in-out property <bool> on-store;
+
+    callback edit-book(BookInEdit);
+    callback get-author-list();
+    callback get-supplier-list();
+    callback get-series-list();
+    callback get-publisher-list();
+    callback get-keyword-list();
+
+    callback add-author(BookInEdit, int, string);
+    callback remove-author(BookInEdit, int);
+    callback add-supplier(BookInEdit, int, string);
+    callback remove-supplier(BookInEdit, int);
+    callback add-series(BookInEdit, int, string, int);
+    callback remove-series(BookInEdit, int);
+    callback change-publisher(BookInEdit, int, string);
+    callback add-keyword(BookInEdit, int, string);
+    callback remove-keyword(BookInEdit, int);
+    title: "Edit Book";
+
+    preferred-width: 600px;
+    preferred-height: 800px;
+
+    BookEditView {
+        book: book;
+        preferred-width: root.width;
+        preferred-height: root.height;
+
+        authors: root.authors;
+        author-ids: root.author-ids;
+        suppliers: root.suppliers;
+        supplier-ids: root.supplier-ids;
+        series: root.series;
+        series-ids: root.series-ids;
+        publishers: root.publishers;
+        publisher-ids: root.publisher-ids;
+        keywords: root.keywords;
+        keyword-ids: root.keyword-ids;
+
+        isbn <=> root.isbn;
+        book-title <=> root.book-title;
+        price <=> root.price;
+        catalog <=> root.catalog;
+        cover <=> root.cover;
+        on-store <=> root.on-store;
+
+        edit-book(book) => {
+            root.edit-book(book);
+        }
+
+        get-author-list => {
+            root.get-author-list();
+        }
+
+        get-supplier-list => {
+            root.get-supplier-list();
+        }
+
+        get-series-list => {
+            root.get-series-list();
+        }
+
+        get-publisher-list => {
+            root.get-publisher-list();
+        }
+
+        get-keyword-list => {
+            root.get-keyword-list();
+        }
+
+        add-author(book, id, name) => {
+            root.add-author(book, id, name);
+        }
+
+        remove-author(book, id) => {
+            root.remove-author(book, id);
+        }
+
+        add-supplier(book, id, name) => {
+            root.add-supplier(book, id, name);
+        }
+
+        remove-supplier(book, id) => {
+            root.remove-supplier(book, id);
+        }
+
+        add-series(book, id, name, column) => {
+            root.add-series(book, id, name, column);
+        }
+
+        remove-series(book, id) => {
+            root.remove-series(book, id);
+        }
+
+        change-publisher(book, id, name) => {
+            root.change-publisher(book, id, name);
+        }
+
+        add-keyword(book, id, name) => {
+            root.add-keyword(book, id, name);
+        }
+
+        remove-keyword(book, id) => {
+            root.remove-keyword(book, id);
+        }
+    }
+}
+
+export component BookAddWindow inherits Window {
+    in property <string> add-message;
+
+    in property <BookInAdd> book;
+
+    in property <[string]> authors;
+    in property <[int]> author-ids;
+    in property <[string]> suppliers;
+    in property <[int]> supplier-ids;
+    in property <[string]> series;
+    in property <[int]> series-ids;
+    in property <[string]> publishers;
+    in property <[int]> publisher-ids;
+    in property <[string]> keywords;
+    in property <[int]> keyword-ids;
+    in-out property <string> isbn;
+    in-out property <string> book-title;
+    in-out property <string> price;
+    in-out property <string> catalog;
+    in-out property <string> cover;
+    in-out property <bool> on-store;
+
+    callback add-book(BookInAdd);
+    callback get-author-list();
+    callback get-supplier-list();
+    callback get-series-list();
+    callback get-publisher-list();
+    callback get-keyword-list();
+
+    callback add-author(BookInAdd, int, string);
+    callback remove-author(BookInAdd, int);
+    callback add-supplier(BookInAdd, int, string);
+    callback remove-supplier(BookInAdd, int);
+    callback add-series(BookInAdd, int, string, int);
+    callback remove-series(BookInAdd, int);
+    callback change-publisher(BookInAdd, int, string);
+    callback add-keyword(BookInAdd, int, string);
+    callback remove-keyword(BookInAdd, int);
+
+    title: "Add Book";
+
+    preferred-width: 600px;
+    preferred-height: 800px;
+
+    BookAddView {
+        book-add-message: root.add-message;
+
+        book: book;
+        preferred-width: root.width;
+        preferred-height: root.height;
+
+        authors: root.authors;
+        author-ids: root.author-ids;
+        suppliers: root.suppliers;
+        supplier-ids: root.supplier-ids;
+        series: root.series;
+        series-ids: root.series-ids;
+        publishers: root.publishers;
+        publisher-ids: root.publisher-ids;
+        keywords: root.keywords;
+        keyword-ids: root.keyword-ids;
+
+        isbn <=> root.isbn;
+        book-title <=> root.book-title;
+        price <=> root.price;
+        catalog <=> root.catalog;
+        cover <=> root.cover;
+        on-store <=> root.on-store;
+
+        add-book(book) => {
+            root.add-book(book);
+        }
+
+        get-author-list => {
+            root.get-author-list();
+        }
+
+        get-supplier-list => {
+            root.get-supplier-list();
+        }
+
+        get-series-list => {
+            root.get-series-list();
+        }
+
+        get-publisher-list => {
+            root.get-publisher-list();
+        }
+
+        get-keyword-list => {
+            root.get-keyword-list();
+        }
+
+        add-author(book, id, name) => {
+            root.add-author(book, id, name);
+        }
+
+        remove-author(book, id) => {
+            root.remove-author(book, id);
+        }
+
+        add-supplier(book, id, name) => {
+            root.add-supplier(book, id, name);
+        }
+
+        remove-supplier(book, id) => {
+            root.remove-supplier(book, id);
+        }
+
+        add-series(book, id, name, column) => {
+            root.add-series(book, id, name, column);
+        }
+
+        remove-series(book, id) => {
+            root.remove-series(book, id);
+        }
+
+        change-publisher(book, id, name) => {
+            root.change-publisher(book, id, name);
+        }
+
+        add-keyword(book, id, name) => {
+            root.add-keyword(book, id, name);
+        }
+
+        remove-keyword(book, id) => {
+            root.remove-keyword(book, id);
+        }
     }
 }
 
