@@ -12,7 +12,6 @@ mod publisher;
 mod purchase_order;
 mod series;
 mod shortage;
-mod stock;
 mod supplier;
 
 pub use admin::Admin;
@@ -32,5 +31,4 @@ pub use publisher::Publisher;
 pub use purchase_order::{PurchaseOrder, PurchaseOrderItem};
 pub use series::{BookInSeries, Series};
 pub use shortage::{Shortage, ShortageItem};
-pub use stock::Stock;
 pub use supplier::{Supplier, SupplierCatalog, SupplierRecord};

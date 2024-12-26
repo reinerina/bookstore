@@ -555,3 +555,76 @@ pub async fn book_authors_search(
         Err(e) => HttpResponse::BadGateway().body(e.to_string()),
     }
 }
+
+#[derive(Debug, Serialize)]
+struct AuthorListResponse {
+    authors: Vec<AuthorListItemResponse>,
+}
+
+#[post("/book/author/list")]
+pub async fn author_list(pool: web::Data<Pool>) -> impl Responder {
+    match pool.get_conn().await {
+        Ok(mut conn) => match BookService::get_author_list(&mut conn).await {
+            Ok(authors) => HttpResponse::Ok().json(AuthorListResponse {
+                authors: authors
+                    .into_iter()
+                    .map(|author| AuthorListItemResponse {
+                        author_id: author.id,
+                        name: author.name,
+                    })
+                    .collect(),
+            }),
+            Err(e) => HttpResponse::BadGateway().body(e.to_string()),
+        },
+        Err(e) => HttpResponse::BadGateway().body(e.to_string()),
+    }
+}
+
+#[derive(Debug, Serialize)]
+struct PublisherListResponse {
+    publishers: Vec<PublisherListItemResponse>,
+}
+
+#[post("/book/publisher/list")]
+pub async fn publisher_list(pool: web::Data<Pool>) -> impl Responder {
+    match pool.get_conn().await {
+        Ok(mut conn) => match BookService::get_publisher_list(&mut conn).await {
+            Ok(publishers) => HttpResponse::Ok().json(PublisherListResponse {
+                publishers: publishers
+                    .into_iter()
+                    .map(|publisher| PublisherListItemResponse {
+                        publisher_id: publisher.id,
+                        name: publisher.name,
+                    })
+                    .collect(),
+            }),
+            Err(e) => HttpResponse::BadGateway().body(e.to_string()),
+        },
+        Err(e) => HttpResponse::BadGateway().body(e.to_string()),
+    }
+}
+
+#[derive(Debug, Serialize)]
+struct SeriesListResponse {
+    series: Vec<SeriesListItemResponse>,
+}
+
+#[post("/book/series/list")]
+pub async fn series_list(pool: web::Data<Pool>) -> impl Responder {
+    match pool.get_conn().await {
+        Ok(mut conn) => match BookService::get_series_list(&mut conn).await {
+            Ok(series) => HttpResponse::Ok().json(SeriesListResponse {
+                series: series
+                    .into_iter()
+                    .map(|series| SeriesListItemResponse {
+                        series_id: series.id,
+                        name: series.title,
+                        column: 0,
+                    })
+                    .collect(),
+            }),
+            Err(e) => HttpResponse::BadGateway().body(e.to_string()),
+        },
+        Err(e) => HttpResponse::BadGateway().body(e.to_string()),
+    }
+}

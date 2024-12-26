@@ -31,3 +31,33 @@ pub async fn supplier_profile(pool: web::Data<Pool>, id: web::Path<(u32,)>) -> i
         Err(e) => HttpResponse::BadGateway().json(e.to_string()),
     }
 }
+
+#[derive(Debug, Serialize)]
+struct SupplierListItemResponse {
+    supplier_id: u32,
+    name: String,
+}
+
+#[derive(Debug, Serialize)]
+struct SupplierListResponse {
+    suppliers: Vec<SupplierListItemResponse>,
+}
+
+#[post("/supplier/list")]
+pub async fn supplier_list(pool: web::Data<Pool>) -> impl Responder {
+    match pool.get_conn().await {
+        Ok(mut conn) => match SupplierService::get_supplier_list(&mut conn).await {
+            Ok(suppliers) => HttpResponse::Ok().json(SupplierListResponse {
+                suppliers: suppliers
+                    .into_iter()
+                    .map(|supplier| SupplierListItemResponse {
+                        supplier_id: supplier.id,
+                        name: supplier.name,
+                    })
+                    .collect(),
+            }),
+            Err(e) => HttpResponse::BadGateway().json(e.to_string()),
+        },
+        Err(e) => HttpResponse::BadGateway().json(e.to_string()),
+    }
+}

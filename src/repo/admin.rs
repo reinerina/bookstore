@@ -38,7 +38,10 @@ impl AdminRepo {
         Ok(result == Some(1))
     }
 
-    pub async fn get_admin(conn: &mut Conn, admin_username: &str) -> anyhow::Result<Option<Admin>> {
+    pub async fn get_admin_detail(
+        conn: &mut Conn,
+        admin_username: &str,
+    ) -> anyhow::Result<Option<Admin>> {
         let query = r"SELECT admin_id,admin_username,status,role FROM admins WHERE admin_username=:admin_username;";
         let params = params! {
             "admin_username" => admin_username,
@@ -59,5 +62,23 @@ impl AdminRepo {
             .await?;
 
         Ok(result.pop())
+    }
+
+    pub async fn get_user_list(conn: &mut Conn) -> anyhow::Result<Vec<Admin>> {
+        let query = r"SELECT admin_id,admin_username,status,role FROM admins;";
+        let result = query
+            .map(conn, |(admin_id, admin_username, status, role)| {
+                let status: String = status;
+                let role: String = role;
+                Admin {
+                    id: admin_id,
+                    username: admin_username,
+                    password: String::new(),
+                    status: status.parse().unwrap(),
+                    role: role.parse().unwrap(),
+                }
+            })
+            .await?;
+        Ok(result)
     }
 }

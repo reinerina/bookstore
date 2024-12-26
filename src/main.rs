@@ -1,9 +1,13 @@
 use actix_web::{get, web, App, HttpResponse, HttpServer};
 use bookstore::controller::{
-    admin_login, admin_register, book_authors_search, book_detail, book_keywords_search, book_list,
-    book_title_search, credit_rule, login, order_create, order_detail, order_history,
-    purchase_order_detail, purchase_order_list, register, supplier_profile, user_detail,
-    user_logout, user_update,
+    admin_book_add, admin_book_detail, admin_book_update, admin_customer_balance,
+    admin_customer_credit, admin_customer_list, admin_detail, admin_location_list, admin_login,
+    admin_order_list, admin_order_ship_auto, admin_register, admin_stock_change,
+    admin_stock_transfer, author_list, book_authors_search, book_detail, book_keywords_search,
+    book_list, book_title_search, credit_rule, keyword_list, login, order_create, order_detail,
+    order_history, publisher_list, purchase_order_detail, purchase_order_list, register,
+    series_list, supplier_list, supplier_profile, user_detail, user_logout, user_profile,
+    user_update,
 };
 use mysql_async::prelude::{Query, WithParams};
 use mysql_async::{OptsBuilder, Pool};
@@ -26,23 +30,12 @@ async fn echo_query(q: web::Query<Echo>) -> HttpResponse {
     HttpResponse::Ok().body(format!("q: {:?}", q.content))
 }
 
-#[get("/user/{id}/profile")]
-async fn user_profile(info: web::Path<(u32,)>) -> HttpResponse {
-    let user_id = info.into_inner().0;
-    let response = format!("User profile of ID: {}", user_id);
-    HttpResponse::Ok().body(response)
-}
-
 #[get("/user")]
 async fn sql_user(conn: web::Data<Pool>) -> HttpResponse {
     let mut conn = conn.get_conn().await.unwrap();
     let query = r"SELECT USER()";
     let user = query.with(()).map(&mut conn, |s: String| s).await.unwrap();
     HttpResponse::Ok().body(user.index(0).clone())
-}
-
-async fn manual_hello() -> HttpResponse {
-    HttpResponse::Ok().body("Hey there!")
 }
 
 #[actix_web::main]
@@ -68,12 +61,21 @@ async fn main() -> std::io::Result<()> {
         App::new()
             .app_data(web::Data::new(pool_clone.clone()))
             .service(index)
-            .service(echo_query)
-            .route("/hey", web::get().to(manual_hello))
-            .service(user_profile)
             .service(actix_files::Files::new("/assets/images", "assets/images"))
             .service(admin_register)
             .service(admin_login)
+            .service(admin_detail)
+            .service(admin_book_detail)
+            .service(admin_location_list)
+            .service(admin_stock_change)
+            .service(admin_stock_transfer)
+            .service(admin_book_update)
+            .service(admin_book_add)
+            .service(admin_customer_list)
+            .service(admin_customer_credit)
+            .service(admin_customer_balance)
+            .service(admin_order_list)
+            .service(admin_order_ship_auto)
             .service(register)
             .service(login)
             .service(user_detail)
@@ -84,6 +86,11 @@ async fn main() -> std::io::Result<()> {
             .service(credit_rule)
             .service(book_detail)
             .service(book_list)
+            .service(author_list)
+            .service(publisher_list)
+            .service(keyword_list)
+            .service(supplier_list)
+            .service(series_list)
             .service(book_title_search)
             .service(book_keywords_search)
             .service(book_authors_search)

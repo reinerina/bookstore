@@ -92,6 +92,20 @@ impl StockRepo {
         Ok(())
     }
 
+    pub async fn out_stock_automatic(
+        conn: &mut Conn,
+        book_id: u32,
+        quantity: u32,
+    ) -> anyhow::Result<()> {
+        let query = r"UPDATE book_locations SET quantity = quantity - :quantity WHERE book_id = :book_id AND quantity >= :quantity";
+        let params = params! {
+            "book_id" => book_id,
+            "quantity" => quantity,
+        };
+        query.with(params).run(&mut *conn).await?;
+        Ok(())
+    }
+
     pub async fn in_stock(
         conn: &mut Conn,
         book_id: u32,
@@ -110,17 +124,41 @@ impl StockRepo {
     }
 
     pub async fn get_location_list(conn: &mut Conn) -> anyhow::Result<Vec<Location>> {
+        let query = r"SELECT location_id, description FROM loactions;";
+        let result = query
+            .with(())
+            .map(&mut *conn, |(location_id, description)| {
+                let location_id: u32 = location_id;
+                Location {
+                    id: location_id,
+                    description,
+                    book_id: 0,
+                    quantity: 0,
+                }
+            })
+            .await?;
+        Ok(result)
+    }
+
+    pub async fn get_location_list_by_book(
+        conn: &mut Conn,
+        book_id: u32,
+    ) -> anyhow::Result<Vec<Location>> {
         let query = r"SELECT DISTINCT
 	loactions.location_id,
 	loactions.description,
-	book_loactions.book_id,
-	book_loactions.quantity
+	book_locations.book_id,
+	book_locations.quantity
 FROM
-	book_loactions
-	LEFT JOIN loactions ON loactions.location_id = book_loactions.location_id
+	book_locations
+	LEFT JOIN loactions ON loactions.location_id = book_locations.location_id
 WHERE
-	book_loactions.book_id = :book_id";
+	book_locations.book_id = :book_id";
+        let params = params! {
+            "book_id" => book_id,
+        };
         let result = query
+            .with(params)
             .map(
                 &mut *conn,
                 |(location_id, description, book_id, quantity)| {

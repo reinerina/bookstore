@@ -5,6 +5,7 @@ mod index;
 mod order;
 mod purchase_order;
 mod shortage;
+mod stock;
 mod supplier;
 mod user;
 
@@ -14,5 +15,6 @@ pub use book::BookService;
 pub use order::OrderService;
 pub use purchase_order::PurchaseOrderService;
 pub use shortage::ShortageService;
+pub use stock::StockService;
 pub use supplier::SupplierService;
 pub use user::UserService;

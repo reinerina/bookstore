@@ -1,5 +1,6 @@
 use crate::entity::{
-    Author, Book, BookInSeries, Keyword, PriceInquiry, PriceInquiryStatus, Publisher, Supplier,
+    Author, Book, BookInSeries, Keyword, PriceInquiry, PriceInquiryStatus, Publisher, Series,
+    Supplier,
 };
 use mysql_async::prelude::{Query, WithParams};
 use mysql_async::{params, Conn};
@@ -863,6 +864,8 @@ ORDER BY
         title: &str,
         authors: &Vec<u32>,
         keywords: &Vec<u32>,
+        series: &Vec<(u32, u32)>,
+        supplier: &Vec<u32>,
         publisher: u32,
         price: BigDecimal,
         catalog: &str,
@@ -885,12 +888,12 @@ ORDER BY
 
         let book_id = match book_id {
             Some(book_id) => {
-                for author in authors {
-                    let query =
-                        r"INSERT INTO book_authors(book_id,author_id) VALUES(:book_id,:author_id);";
+                for (index, author) in authors.iter().enumerate() {
+                    let query = r"INSERT INTO book_authors(book_id,author_id,`order`) VALUES(:book_id,:author_id,:order);";
                     let params = params! {
                         "book_id" => book_id,
                         "author_id" => author,
+                        "order" => index + 1,
                     };
                     query.with(params).run(&mut *conn).await?;
                 }
@@ -899,6 +902,23 @@ ORDER BY
                     let params = params! {
                         "book_id" => book_id,
                         "keyword_id" => keyword,
+                    };
+                    query.with(params).run(&mut *conn).await?;
+                }
+                for (series_id, column_num) in series {
+                    let query = r"INSERT INTO series_books(series_id,book_id,column_num) VALUES(:series_id,:book_id,:column_num);";
+                    let params = params! {
+                        "series_id" => series_id,
+                        "book_id" => book_id,
+                        "column_num" => column_num,
+                    };
+                    query.with(params).run(&mut *conn).await?;
+                }
+                for supplier_id in supplier {
+                    let query = r"INSERT INTO book_suppliers(book_id,supplier_id) VALUES(:book_id,:supplier_id);";
+                    let params = params! {
+                        "book_id" => book_id,
+                        "supplier_id" => supplier_id,
                     };
                     query.with(params).run(&mut *conn).await?;
                 }
@@ -983,6 +1003,18 @@ ORDER BY
         Ok(result)
     }
 
+    pub async fn get_series_list(conn: &mut Conn) -> anyhow::Result<Vec<Series>> {
+        let query = r"SELECT series_id,series_title FROM series;";
+        let result = query
+            .with(())
+            .map(conn, |(series_id, series_title)| Series {
+                id: series_id,
+                title: series_title,
+            })
+            .await?;
+        Ok(result)
+    }
+
     pub async fn get_publisher(
         conn: &mut Conn,
         publisher_id: u32,
@@ -1019,6 +1051,8 @@ ORDER BY
         title: &str,
         authors: &Vec<u32>,
         keywords: &Vec<u32>,
+        series: &Vec<(u32, u32)>,
+        supplier: &Vec<u32>,
         publisher: u32,
         price: BigDecimal,
         catalog: &str,
@@ -1047,11 +1081,22 @@ ORDER BY
             "book_id" => book_id,
         };
         query.with(params).run(&mut *conn).await?;
-        for author in authors {
-            let query = r"INSERT INTO book_authors(book_id,author_id) VALUES(:book_id,:author_id);";
+        let query = r"DELETE FROM series_books WHERE book_id=:book_id;";
+        let params = params! {
+            "book_id" => book_id,
+        };
+        query.with(params).run(&mut *conn).await?;
+        let query = r"DELETE FROM book_suppliers WHERE book_id=:book_id;";
+        let params = params! {
+            "book_id" => book_id,
+        };
+        query.with(params).run(&mut *conn).await?;
+        for (order, author) in authors.iter().enumerate() {
+            let query = r"INSERT INTO book_authors(book_id,author_id,`order`) VALUES(:book_id,:author_id,:order);";
             let params = params! {
                 "book_id" => book_id,
                 "author_id" => author,
+                "order" => order + 1,
             };
             query.with(params).run(&mut *conn).await?;
         }
@@ -1061,6 +1106,25 @@ ORDER BY
             let params = params! {
                 "book_id" => book_id,
                 "keyword_id" => keyword,
+            };
+            query.with(params).run(&mut *conn).await?;
+        }
+
+        for (series_id, column) in series {
+            let query = r"INSERT INTO series_books(series_id,book_id,column_num) VALUES(:series_id,:book_id,:column_num);";
+            let params = params! {
+                "series_id" => series_id,
+                "book_id" => book_id,
+                "column_num" => column,
+            };
+            query.with(params).run(&mut *conn).await?;
+        }
+        for supplier in supplier {
+            let query =
+                r"INSERT INTO book_suppliers(book_id,supplier_id) VALUES(:book_id,:supplier_id);";
+            let params = params! {
+                "book_id" => book_id,
+                "supplier_id" => supplier,
             };
             query.with(params).run(&mut *conn).await?;
         }

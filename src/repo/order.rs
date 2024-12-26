@@ -230,6 +230,87 @@ GROUP BY
         }
     }
 
+    pub async fn get_order_list_all(conn: &mut Conn) -> anyhow::Result<Vec<Order>> {
+        let query = r"SELECT
+	orders.order_id,
+	orders.customer_id,
+	GROUP_CONCAT( DISTINCT CONCAT( order_items.order_item_id, ',', order_items.book_id, ',', order_items.quantity , ',', books.price * order_items.quantity ) SEPARATOR ';' ) AS items,
+	orders.order_date,
+	orders.shipping_address,
+	orders.payment_status,
+	orders.shipping_status,
+	credit_rules.discount_percentage,
+	SUM( books.price * order_items.quantity ) AS original_price,
+	SUM( books.price * order_items.quantity ) * credit_rules.discount_percentage * 0.01 AS discount_amount,
+	SUM( books.price * order_items.quantity ) * ( 100 - credit_rules.discount_percentage ) * 0.01 AS total_price
+FROM
+	orders
+	LEFT JOIN customers ON customers.customer_id = orders.customer_id
+	LEFT JOIN credit_rules ON credit_rules.credit_level = customers.credit_level
+	LEFT JOIN order_items ON order_items.order_id = orders.order_id
+	LEFT JOIN books ON books.book_id = order_items.book_id
+GROUP BY
+	orders.order_id,
+	orders.customer_id;";
+        let result = query
+            .with(())
+            .map(
+                conn,
+                |(
+                    order_id,
+                    customer_id,
+                    items,
+                    order_date,
+                    shipping_address,
+                    payment_status,
+                    shipping_status,
+                    discount_percentage,
+                    original_price,
+                    discount_amount,
+                    total_price,
+                )| Order {
+                    id: order_id,
+                    customer_id,
+                    items: {
+                        let items: Option<String> = items;
+                        match items {
+                            Some(items) => items
+                                .split(';')
+                                .map(|item| {
+                                    let mut iter = item.split(',');
+                                    OrderItem {
+                                        id: iter.next().unwrap().parse().unwrap(),
+                                        order_id,
+                                        book_id: iter.next().unwrap().parse().unwrap(),
+                                        quantity: iter.next().unwrap().parse().unwrap(),
+                                        total_price: iter.next().unwrap().parse().unwrap(),
+                                    }
+                                })
+                                .collect(),
+                            None => Vec::new(),
+                        }
+                    },
+                    date: order_date,
+                    discount_percentage,
+                    discount_amount,
+                    original_amount: original_price,
+                    total_amount: total_price,
+                    shipping_address,
+                    payment_status: {
+                        let payment_status: String = payment_status;
+                        payment_status.parse().unwrap()
+                    },
+                    shipping_status: {
+                        let shipping_status: String = shipping_status;
+                        shipping_status.parse().unwrap()
+                    },
+                },
+            )
+            .await?;
+
+        Ok(result)
+    }
+
     pub async fn get_order_items(conn: &mut Conn, order_id: u32) -> anyhow::Result<Vec<OrderItem>> {
         let query = r"SELECT order_items.order_item_id,order_items.book_id,order_items.quantity,
 books.price * order_items.quantity AS total_price FROM order_items
@@ -309,6 +390,64 @@ WHERE
         for (book_id, location_id, quantity) in stock_locations {
             StockRepo::out_stock(&mut *conn, *book_id, *location_id, *quantity).await?;
         }
+        let query = r"UPDATE orders SET shipping_status = 'shipped' WHERE order_id = :order_id;";
+        let params = params! {
+            "order_id" => order_id,
+        };
+        query.with(params).run(&mut *conn).await?;
+        Ok(())
+    }
+
+    pub async fn ship_order_automatic(conn: &mut Conn, order_id: u32) -> anyhow::Result<()> {
+        let query = r"SELECT payment_status FROM orders WHERE order_id = :order_id;";
+        let params = params! {
+            "order_id" => order_id,
+        };
+        let payment_status: String = query
+            .with(params)
+            .first(&mut *conn)
+            .await?
+            .unwrap_or_default();
+        if payment_status != OrderPaymentStatus::Paid.to_string() {
+            anyhow::bail!("payment not completed");
+        }
+        let query = r"SELECT book_id,quantity FROM order_items WHERE order_id = :order_id;";
+        let params = params! {
+            "order_id" => order_id,
+        };
+        let book_quantities = query
+            .with(params)
+            .map(&mut *conn, |(book_id, quantity)| (book_id, quantity))
+            .await?;
+
+        for (book_id, quantity) in book_quantities {
+            let query = r"SELECT location_id,quantity FROM book_locations WHERE book_id = :book_id ORDER BY quantity ASC;";
+            let params = params! {
+                "book_id" => book_id,
+            };
+            let mut stock_locations = query
+                .with(params)
+                .map(&mut *conn, |(location_id, quantity)| {
+                    (location_id, quantity)
+                })
+                .await?;
+            let mut remaining_quantity = quantity;
+            while remaining_quantity > 0 {
+                match stock_locations.pop() {
+                    Some((location_id, stock_quantity)) => {
+                        let quantity = if remaining_quantity > stock_quantity {
+                            stock_quantity
+                        } else {
+                            remaining_quantity
+                        };
+                        StockRepo::out_stock(&mut *conn, book_id, location_id, quantity).await?;
+                        remaining_quantity -= quantity;
+                    }
+                    None => anyhow::bail!("out of stock"),
+                }
+            }
+        }
+
         let query = r"UPDATE orders SET shipping_status = 'shipped' WHERE order_id = :order_id;";
         let params = params! {
             "order_id" => order_id,

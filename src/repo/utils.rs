@@ -16,4 +16,22 @@ impl UtilsRepo {
             None => anyhow::bail!("failed to get current datetime"),
         }
     }
+
+    pub async fn transaction(conn: &mut Conn) -> anyhow::Result<()> {
+        let query = r"START TRANSACTION;";
+        query.run(&mut *conn).await?;
+        Ok(())
+    }
+
+    pub async fn commit(conn: &mut Conn) -> anyhow::Result<()> {
+        let query = r"COMMIT;";
+        query.run(&mut *conn).await?;
+        Ok(())
+    }
+
+    pub async fn rollback(conn: &mut Conn) -> anyhow::Result<()> {
+        let query = r"ROLLBACK;";
+        query.run(&mut *conn).await?;
+        Ok(())
+    }
 }

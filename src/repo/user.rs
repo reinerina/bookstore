@@ -1,6 +1,7 @@
 use crate::entity::{CreditRule, Customer, UserStatus};
 use mysql_async::prelude::{Query, WithParams};
 use mysql_async::{params, Conn};
+use mysql_common::bigdecimal::BigDecimal;
 
 pub struct UserRepo;
 
@@ -143,6 +144,79 @@ impl UserRepo {
             )
             .await?;
         Ok(result.pop())
+    }
+
+    pub async fn get_user_list(conn: &mut Conn) -> anyhow::Result<Vec<Customer>> {
+        let query = r"SELECT customer_id,username,pwd,name,address,email,
+        account_balance,credit_level,
+        total_purchase,overdraft_limit,status
+        FROM customers;";
+        let result = query
+            .map(
+                conn,
+                |(
+                    customer_id,
+                    username,
+                    pwd,
+                    name,
+                    address,
+                    email,
+                    account_balance,
+                    credit_level,
+                    total_purchase,
+                    overdraft_limit,
+                    status,
+                )| {
+                    Customer {
+                        id: customer_id,
+                        username,
+                        password: pwd,
+                        name,
+                        address,
+                        email,
+                        account_balance,
+                        credit_level,
+                        total_purchase,
+                        overdraft_limit,
+                        status: {
+                            let status: String = status;
+                            status.parse().unwrap()
+                        },
+                    }
+                },
+            )
+            .await?;
+        Ok(result)
+    }
+
+    pub async fn set_user_balance(
+        conn: &mut Conn,
+        customer_id: u32,
+        balance: BigDecimal,
+    ) -> anyhow::Result<()> {
+        let query =
+            r"UPDATE customers SET account_balance=:balance WHERE customer_id=:customer_id;";
+        let params = params! {
+            "balance" => balance,
+            "customer_id" => customer_id,
+        };
+        query.with(params).run(&mut *conn).await?;
+        Ok(())
+    }
+
+    pub async fn set_user_credit_level(
+        conn: &mut Conn,
+        customer_id: u32,
+        credit_level: u32,
+    ) -> anyhow::Result<()> {
+        let query =
+            r"UPDATE customers SET credit_level=:credit_level WHERE customer_id=:customer_id;";
+        let params = params! {
+            "credit_level" => credit_level,
+            "customer_id" => customer_id,
+        };
+        query.with(params).run(&mut *conn).await?;
+        Ok(())
     }
 
     pub async fn update_user_profile(

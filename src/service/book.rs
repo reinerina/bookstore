@@ -1,4 +1,4 @@
-use crate::entity::{AdminRole, Book, Keyword};
+use crate::entity::{AdminRole, Author, Book, Keyword, Publisher, Series};
 use crate::repo::BookRepo;
 use crate::service::AdminService;
 use crate::utils::Token;
@@ -21,6 +21,18 @@ impl BookService {
 
     pub async fn get_keyword_list(conn: &mut Conn) -> anyhow::Result<Vec<Keyword>> {
         BookRepo::get_keyword_list(conn).await
+    }
+
+    pub async fn get_author_list(conn: &mut Conn) -> anyhow::Result<Vec<Author>> {
+        BookRepo::get_author_list(conn).await
+    }
+
+    pub async fn get_publisher_list(conn: &mut Conn) -> anyhow::Result<Vec<Publisher>> {
+        BookRepo::get_publisher_list(conn).await
+    }
+
+    pub async fn get_series_list(conn: &mut Conn) -> anyhow::Result<Vec<Series>> {
+        BookRepo::get_series_list(conn).await
     }
 
     pub async fn add_keyword(conn: &mut Conn, token: &Token, keyword: &str) -> anyhow::Result<u32> {
@@ -70,6 +82,8 @@ impl BookService {
         title: &str,
         authors: &Vec<u32>,
         keywords: &Vec<u32>,
+        series: &Vec<(u32, u32)>,
+        suppliers: &Vec<u32>,
         publisher: u32,
         price: BigDecimal,
         catalog: &str,
@@ -79,8 +93,8 @@ impl BookService {
         match AdminService::verify_admin(conn, token, AdminRole::Staff).await? {
             (_, _, true) => {
                 match BookRepo::add_book(
-                    conn, isbn, title, authors, keywords, publisher, price, catalog, cover,
-                    is_onstore,
+                    conn, isbn, title, authors, keywords, series, suppliers, publisher, price,
+                    catalog, cover, is_onstore,
                 )
                 .await?
                 {
@@ -100,6 +114,8 @@ impl BookService {
         title: &str,
         authors: &Vec<u32>,
         keywords: &Vec<u32>,
+        series: &Vec<(u32, u32)>,
+        suppliers: &Vec<u32>,
         publisher: u32,
         price: BigDecimal,
         catalog: &str,
@@ -109,8 +125,8 @@ impl BookService {
         match AdminService::verify_admin(conn, token, AdminRole::Staff).await? {
             (_, _, true) => {
                 match BookRepo::update_book(
-                    conn, book_id, isbn, title, authors, keywords, publisher, price, catalog,
-                    cover, is_onstore,
+                    conn, book_id, isbn, title, authors, keywords, series, suppliers, publisher,
+                    price, catalog, cover, is_onstore,
                 )
                 .await?
                 {
