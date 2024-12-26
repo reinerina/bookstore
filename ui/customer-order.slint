@@ -1,4 +1,4 @@
-import { VerticalBox, Button, ListView } from "std-widgets.slint";
+import { VerticalBox,HorizontalBox, Button, ListView } from "std-widgets.slint";
 
 export struct BookInOrder {
     id: int,
@@ -8,10 +8,8 @@ export struct BookInOrder {
 
 export struct CustomerOrder {
     id: int,
-    customer_id: string,
+    customer_id: int,
     items: [BookInOrder],
-    discount_percentage: string,
-    discount_amount: string,
     original_price: string,
     total_price: string,
     order_date: string,
@@ -23,7 +21,7 @@ component singleOrderView inherits Rectangle {
     in property <CustomerOrder> order;
     in property <length> item-width;
     callback delete-customer-order(string);
-    callback send-goods(string);
+    callback send-goods(int);
 
     width: root.item-width;
     callback clicked <=> touch.clicked;
@@ -55,51 +53,50 @@ component singleOrderView inherits Rectangle {
 
             VerticalLayout {
 
-                HorizontalLayout {
+                HorizontalBox {
                     alignment: LayoutAlignment.start;
-                    Text {
-                        text: "Order ID: " + root.order.id;
+                    VerticalLayout {
+                        alignment: LayoutAlignment.start;
+                        Text {
+                            text: "Order ID: " + root.order.id;
+                        }
+
+                        Text {
+                            text: "Order Date: " + root.order.order_date;
+                        }
+
+                        Text {
+                            text: "Customer id: " + root.order.customer_id;
+                        }
                     }
 
-                    Text {
-                        text: "Order Date: " + root.order.order_date;
-                    }
+                    VerticalLayout {
+                        alignment: LayoutAlignment.start;
+                        Text {
+                            text: "Total Price: " + root.order.total_price;
+                        }
 
-                    Text {
-                        text: "Customer id: " + root.order.customer_id;
-                    }
+                        Text {
+                            text: "Payment Status: " + root.order.payment_status;
+                        }
 
-                    Text {
-                        text: "Total Price: " + root.order.total_price;
-                    }
-
-                    Text {
-                        text: "Payment Status: " + root.order.payment_status;
-                    }
-
-                    Text {
-                        text: "Shipping Status: " + root.order.shipping_status;
+                        Text {
+                            text: "Shipping Status: " + root.order.shipping_status;
+                        }
                     }
                 }
 
-                HorizontalLayout {
+                HorizontalBox {
                     alignment: LayoutAlignment.start;
-                    Text {
-                        text: "Discount Percentage: " + root.order.discount_percentage;
-                    }
-
-                    Text {
-                        text: "Discount Amount: " + root.order.discount_amount;
-                    }
 
                     Text {
                         text: "Original Price: " + root.order.original_price;
                     }
                 }
 
-                VerticalLayout {
+                VerticalBox {
                     alignment: LayoutAlignment.start;
-                    for item[index] in root.order.items: Rectangle {
+                    for item[index] in root.order.items: VerticalLayout {
                         width: root.item-width;
                         Text {
                             text: "Book id: " + root.order.items[index].id;
@@ -141,7 +138,7 @@ export component customerOrderView inherits Window {
     in property <length> window-width: 800px;
     in property <length> window-height: 600px;
     callback delete-customer-order(string);
-    callback send-goods(string);
+    callback send-goods(int);
 
     VerticalBox {
         alignment: LayoutAlignment.start;

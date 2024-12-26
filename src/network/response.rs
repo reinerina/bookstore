@@ -211,3 +211,35 @@ pub struct CustomerBalanceResponse {
 pub struct CustomerCreditResponse {
     pub message: String,
 }
+
+#[derive(Debug, Deserialize)]
+pub struct CustomerOrderItemResponse {
+    pub item_id: u32,
+    pub book_id: u32,
+    pub quantity: u32,
+    pub price: String,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct CustomerOrderListItemResponse {
+    pub order_id: u32,
+    pub user_id: u32,
+    pub total_price: String,
+    pub items: Vec<CustomerOrderItemResponse>,
+    pub date: String,
+    pub original_amount: String,
+    pub total_amount: String,
+    pub shipping_address: String,
+    pub payment_status: String,
+    pub shipping_status: String,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct CustomerOrderListResponse {
+    pub orders: Vec<CustomerOrderListItemResponse>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct ShipOrderAutoResponse {
+    pub message: String,
+}

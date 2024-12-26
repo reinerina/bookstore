@@ -4,9 +4,10 @@ use bookstore_admin::network::{
     AuthorListResponse, BookAddRequest, BookAddResponse, BookDetailRequest, BookDetailResponse,
     BookListRequest, BookListResponse, BookUpdateRequest, BookUpdateResponse,
     CustomerBalanceRequest, CustomerBalanceResponse, CustomerCreditRequest, CustomerCreditResponse,
-    CustomerListRequest, CustomerListResponse, KeywordListRequest, KeywordListResponse,
-    LocationListRequest, LocationListResponse, PublisherListRequest, PublisherListResponse,
-    SeriesListRequest, SeriesListResponse, StockChangeRequest, StockChangeResponse,
+    CustomerListRequest, CustomerListResponse, CustomerOrderListRequest, CustomerOrderListResponse,
+    KeywordListRequest, KeywordListResponse, LocationListRequest, LocationListResponse,
+    PublisherListRequest, PublisherListResponse, SeriesListRequest, SeriesListResponse,
+    ShipOrderAutoRequest, ShipOrderAutoResponse, StockChangeRequest, StockChangeResponse,
     StockTransferRequest, StockTransferResponse, SupplierListRequest, SupplierListResponse,
 };
 use bookstore_admin::util::runtime::Runtime;
@@ -2003,6 +2004,121 @@ fn main() -> Result<(), slint::PlatformError> {
                     Ok(_) => {
                         let main_window = main_window.unwrap();
                         main_window.invoke_get_customers_list();
+                    }
+                    Err(e) => {
+                        log::error!("{}", e.to_string());
+                    }
+                }
+            })
+            .unwrap();
+        }
+    });
+
+    main_window.on_get_customer_orders_list({
+        let rt = rt.as_weak();
+        let admin_token = admin_token.as_weak();
+        let main_window = main_window.as_weak();
+        move || {
+            let rt = rt.clone();
+            let admin_token = admin_token.clone();
+            let main_window = main_window.clone();
+            slint::spawn_local(async move {
+                let rt = rt.unwrap();
+                let admin_token = admin_token.unwrap();
+                match rt
+                    .spawn(async move {
+                        match admin_token.get().await {
+                            Some(token) => {
+                                match url_post::<CustomerOrderListResponse, CustomerOrderListRequest>(
+                                    "/admin/order/list",
+                                    CustomerOrderListRequest {
+                                        token: token.token,
+                                        tag: token.tag,
+                                        nonce: token.nonce,
+                                    },
+                                )
+                                .await
+                                {
+                                    Ok(response) => Ok(response),
+                                    Err(e) => Err(e),
+                                }
+                            }
+                            None => Err(anyhow::anyhow!("token not found")),
+                        }
+                    })
+                    .await
+                    .unwrap()
+                {
+                    Ok(order_list) => {
+                        let orders = order_list
+                            .orders
+                            .into_iter()
+                            .map(|order| CustomerOrder {
+                                customer_id: order.user_id as i32,
+                                id: order.order_id as i32,
+                                items: ModelRc::new(VecModel::from(order.items.into_iter().map(|item| BookInOrder {
+                                    id: item.book_id as i32,
+                                    quantity: item.quantity as i32,
+                                    price: item.price.into(),
+                                }).collect::<Vec<_>>())),
+                                order_date: order.date.into(),
+                                original_price: order.original_amount.into(),
+                                payment_status: order.payment_status.into(),
+                                shipping_status: order.shipping_status.into(),
+                                total_price: order.total_amount.into(),
+                            })
+                            .collect::<Vec<_>>();
+                        let main_window = main_window.unwrap();
+                        main_window.set_customer_orders(ModelRc::new(VecModel::from(orders)));
+                    }
+                    Err(e) => {
+                        log::error!("{}", e.to_string());
+                    }
+                }
+            })
+            .unwrap();
+        }
+    });
+
+    main_window.on_send_goods({
+        let rt = rt.as_weak();
+        let admin_token = admin_token.as_weak();
+        let main_window = main_window.as_weak();
+        move |order_id| {
+            let rt = rt.clone();
+            let admin_token = admin_token.clone();
+            let main_window = main_window.clone();
+            slint::spawn_local(async move {
+                let rt = rt.unwrap();
+                let admin_token = admin_token.unwrap();
+                match rt
+                    .spawn(async move {
+                        match admin_token.get().await {
+                            Some(token) => {
+                                match url_post::<ShipOrderAutoResponse, ShipOrderAutoRequest>(
+                                    "/admin/order/ship/auto",
+                                    ShipOrderAutoRequest {
+                                        token: token.token,
+                                        tag: token.tag,
+                                        nonce: token.nonce,
+                                        order_id: order_id as u32,
+                                    },
+                                )
+                                .await
+                                {
+                                    Ok(response) => Ok(response),
+                                    Err(e) => Err(e),
+                                }
+                            }
+                            None => Err(anyhow::anyhow!("token not found")),
+                        }
+                    })
+                    .await
+                    .unwrap()
+                {
+                    Ok(_) => {
+                        let main_window = main_window.unwrap();
+                        main_window.invoke_get_customer_orders_list();
                     }
                     Err(e) => {
                         log::error!("{}", e.to_string());

@@ -81,13 +81,19 @@ component customerItem inherits Rectangle {
             }
         }
 
-        if (root.has-login):VerticalLayout {
+        if (root.has-login):VerticalBox {
             alignment: LayoutAlignment.end;
 
             HorizontalLayout {
                 alignment: LayoutAlignment.end;
+                Text {
+                    text: "New Balance: ";
+                    vertical-alignment: TextVerticalAlignment.center;
+                }
+
                 LineEdit {
                     text <=> root.new-balance;
+                    placeholder-text: "New Balance";
                 }
 
                 Button {

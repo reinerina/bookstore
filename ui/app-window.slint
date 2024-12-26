@@ -7,7 +7,7 @@ import { BookCartView, BookInCart } from "admin-cart.slint";
 import { BookRestockList} from "purchase-list.slint";
 import {restockOrder, BookItem, restockHistory} from "restock-order.slint";
 import {customerView, CustomerInDetail} from "customer-view.slint";
-import {customerOrderView} from "customer-order.slint";
+import {customerOrderView, CustomerOrder} from "customer-order.slint";
 import { OrderHistory } from "order-history.slint";
 import { supplierView } from "supplier-view.slint";
 import { BookDetailView, BookInDetail } from "book-detail.slint";
@@ -35,6 +35,7 @@ export component MainWindow inherits Window {
     in property <[restockOrder]> restock-orders;
 
     in property <[CustomerInDetail]> customers;   //customer-view.slint中的顾客信息结构
+    in property <[CustomerOrder]> customer-orders; //customer-order.slint中的顾客订单结构
 
     out property <int> selected-book-id: -1;
 
@@ -72,7 +73,7 @@ export component MainWindow inherits Window {
 
     callback get-customer-orders-list();
     callback delete-customer-order(string);
-    callback send-goods(string);
+    callback send-goods(int);
 
     callback get-supplier-list();
     callback open-supplier-detail(int); //id是int变量
@@ -309,6 +310,7 @@ export component MainWindow inherits Window {
                     window-width: root.width - side-bar.width - 50px;
                     window-height: root.height;
                     item-width: root.width - side-bar.width - 50px;
+                    orders: root.customer-orders;
                     delete-customer-order(id) => {
                         root.delete-customer-order(id);
                     }

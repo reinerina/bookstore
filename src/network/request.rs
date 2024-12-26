@@ -138,3 +138,18 @@ pub struct CustomerCreditRequest {
     pub user_id: u32,
     pub credit_level: u32,
 }
+
+#[derive(Serialize, Debug, Default)]
+pub struct CustomerOrderListRequest {
+    pub token: String,
+    pub tag: String,
+    pub nonce: String,
+}
+
+#[derive(Serialize, Debug, Default)]
+pub struct ShipOrderAutoRequest {
+    pub token: String,
+    pub tag: String,
+    pub nonce: String,
+    pub order_id: u32,
+}
