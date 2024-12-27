@@ -5,7 +5,6 @@ import { UserDetail } from "user-detail.slint";
 import { InventoryManagement, Book } from "book-management.slint";
 import { BookCartView, BookInCart } from "admin-cart.slint";
 import { BookRestockList} from "purchase-list.slint";
-import {restockOrder, BookItem, restockHistory} from "restock-order.slint";
 import {customerView, CustomerInDetail} from "customer-view.slint";
 import {customerOrderView, CustomerOrder} from "customer-order.slint";
 import { OrderHistory } from "order-history.slint";
@@ -15,6 +14,8 @@ import { BookSearchView, BookInSearch } from "search-book.slint";
 import { CustomerInSearch, CustomerSearchView } from "search-customer.slint";
 import { BookInEdit, AuthorInEdit, SupplierInEdit, SeriesInEdit, BookEditView } from "book-edit.slint";
 import { BookInAdd, AuthorInAdd, SupplierInAdd, SeriesInAdd, BookAddView } from "add-book.slint";
+import { ShortageHistory, ShortageOrder } from "book-shortage.slint";
+import { ShortageDetailView, ShortageDetail, BookInShortage } from "shortage-detail.slint";
 
 export component MainWindow inherits Window {
 
@@ -32,10 +33,13 @@ export component MainWindow inherits Window {
     in property <[BookInSearch]> books-in-search;
 
     in property <[OrderHistory]> orders;
-    in property <[restockOrder]> restock-orders;
+    in property <[ShortageOrder]> shortage-orders;
 
     in property <[CustomerInDetail]> customers;   //customer-view.slint中的顾客信息结构
     in property <[CustomerOrder]> customer-orders; //customer-order.slint中的顾客订单结构
+
+    in property <[string]> suppliers;
+    in property <[int]> supplier-ids;
 
     out property <int> selected-book-id: -1;
 
@@ -58,14 +62,19 @@ export component MainWindow inherits Window {
     callback get-book-list();
     callback add-to-cart(string, int);
 
-    callback get-restock-order-list();
+    callback open-shortage-detail(int);
+    callback get-shortage-order-list();
     callback view-order(string);
     callback delete-order(string);
-    callback confirm-receipt(string);
+    callback create-purchase-order(string);
+    callback add-shortage(int);
 
     callback get-cart-book-list();
     callback update-cart-book(int, int, [BookInCart]);
     callback remove-cart-book(int, [BookInCart]);
+    callback update-cart-supplier(int, int, int, [BookInCart]);
+    callback get-supplier-list();
+
     callback checkout();
 
     callback get-customers-list();
@@ -75,7 +84,6 @@ export component MainWindow inherits Window {
     callback delete-customer-order(string);
     callback send-goods(int);
 
-    callback get-supplier-list();
     callback open-supplier-detail(int); //id是int变量
 
     //callback open-book-detail(int); 之前已经声明
@@ -98,9 +106,9 @@ export component MainWindow inherits Window {
                 //@tr("Menu" => "Customer Profile"),
                 @tr("Menu" => "Login & Admin Info"),
                 @tr("Menu" => "Inventory Management"),
-                @tr("Menu" => "Book Restock"),
-                @tr("Menu" => "Admin Cart"),
-                @tr("Menu" => "Orders"),
+                @tr("Menu" => "Shortage Cart"),
+                @tr("Menu" => "Shortage History"),
+                @tr("Menu" => "Purchase Order"),
                 @tr("Menu" => "Customer Profiles"),
                 @tr("Menu" => "Customer orders"),
                 @tr("Menu" => "Supplier Profiles"),
@@ -127,7 +135,7 @@ export component MainWindow inherits Window {
                 }
             }
 
-            VerticalBox {
+            VerticalLayout {
                 alignment: LayoutAlignment.center;
                 //Login & Admin Info
                 if (side-bar.current-item == 0):admin-info := UserView {
@@ -188,31 +196,31 @@ export component MainWindow inherits Window {
                     add-book => {
                         root.add-book();
                     }
+
+                    add-shortage(id) => {
+                        root.add-shortage(id);
+                    }
                 }
 
                 //Book Restock
-                if (side-bar.current-item == 2):book-restock := BookRestockList {
-                    //展示书籍列表，和InventoryManagement一样（purchase.slint）
-                    init => {
-                        root.get-book-list();
-                    }
-
-                    preferred-width: root.width;
-                    preferred-height: root.height;
-                    books: root.books;
-                    image-width: 150px;
-                    image-aspect-ratio: 1;
-                    item-width: root.width - side-bar.width - 50px;
-                    window-height: root.height;
-                    window-width: root.width;
-
-                    add-to-cart(id, quantity) => {
-                        root.update-cart-book(id, quantity, root.books-in-cart);
-                    }
-                }
+//                if (side-bar.current-item == 2):book-restock := BookRestockList {
+//                    //展示书籍列表，和InventoryManagement一样（purchase.slint）
+//                    init => {
+//                        root.get-book-list();
+//                    }
+//
+//                    preferred-width: root.width;
+//                    preferred-height: root.height;
+//                    books: root.books;
+//                    image-width: 150px;
+//                    image-aspect-ratio: 1;
+//                    item-width: root.width - side-bar.width - 50px;
+//                    window-height: root.height;
+//                    window-width: root.width;
+//                }
 
                 //Admin Cart
-                if (side-bar.current-item == 3):book-cart-view := BookCartView {
+                if (side-bar.current-item == 2):book-cart-view := BookCartView {
                     //补充库存的购物车列表，和之前的BookCartView一样（ui-cart.slint）
                     init => {
                         root.get-cart-book-list();
@@ -226,6 +234,8 @@ export component MainWindow inherits Window {
                     item-width: root.width - side-bar.width - 50px;
                     window-height: root.height;
                     window-width: root.width;
+                    suppliers: root.suppliers;
+                    supplier-ids: root.supplier-ids;
 
                     update-cart-book(id, quantity) => {
                         root.update-cart-book(id, quantity, root.books-in-cart);
@@ -235,21 +245,29 @@ export component MainWindow inherits Window {
                         root.remove-cart-book(id, root.books-in-cart);
                     }
 
+                    update-cart-supplier(id, supplier-index, supplier) => {
+                        root.update-cart-supplier(id, supplier-index, supplier, root.books-in-cart);
+                    }
+
+                    get-supplier-list => {
+                        root.get-supplier-list();
+                    }
+
                     checkout => {
                         root.checkout();
                     }
                 }
 
-                if (side-bar.current-item == 4):order-history-view := restockHistory {
+                if (side-bar.current-item == 3):order-history-view := ShortageHistory {
 
                     init => {
-                        root.get-restock-order-list();
+                        root.get-shortage-order-list();
                     }
 
                     preferred-width: root.width;
                     preferred-height: root.height;
-                    orders: root.restock-orders;
-                    window-width: root.width - side-bar.width - 50px;
+                    orders: root.shortage-orders;
+                    window-width: root.width;
                     window-height: root.height;
                     item-width: root.width - side-bar.width - 50px;
                     view-order(id) => {
@@ -258,10 +276,14 @@ export component MainWindow inherits Window {
                     delete-order(id) => {
                         root.delete-customer-order(id);
                     }
-                    confirm-receipt(id) => {
-                        root.confirm-receipt(id);
+                    create-purchase-order(id) => {
+                        root.create-purchase-order(id);
+                    }
+                    open-shortage-detail(id) => {
+                        root.open-shortage-detail(id);
                     }
                 }
+                
             
 
                 // if (side-bar.current-item == 4):order-history-view := OrderHistoryView {
@@ -285,7 +307,7 @@ export component MainWindow inherits Window {
                     preferred-width: root.width;
                     preferred-height: root.height;
                     customers: root.customers;
-                    window-width: root.width - side-bar.width - 50px;
+                    window-width: root.width;
                     window-height: root.height;
                     item-width: root.width - side-bar.width - 50px;
                     has-login: root.has-login;
@@ -750,6 +772,33 @@ export component BookAddWindow inherits Window {
         remove-keyword(book, id) => {
             root.remove-keyword(book, id);
         }
+    }
+}
+
+export component ShortageDetailWindow inherits Window {
+    in property <ShortageDetail> shortage-detail;
+    in property <length> item-width: 200px;
+    in property <length> window-width: 200px;
+    in property <length> window-height: 300px;
+
+    callback view-order(string);
+    callback delete-order(string);
+    callback confirm-receipt(string);
+
+    title: "Shortage Detail";
+    preferred-width: root.window-width;
+    preferred-height: root.window-height;
+
+    min-width: root.window-width;
+    min-height: root.window-height;
+
+    shortage-detail-view := ShortageDetailView {
+        shortage-detail: shortage-detail;
+        item-width: root.item-width;
+        window-width: root.window-width;
+        window-height: root.window-height;
+        preferred-width: root.width;
+        preferred-height: root.height;
     }
 }
 

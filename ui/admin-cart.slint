@@ -1,14 +1,12 @@
-import { VerticalBox, SpinBox, Button, ListView } from "std-widgets.slint";
+import { VerticalBox, SpinBox, Button, ListView, HorizontalBox } from "std-widgets.slint";
+import { SelectorComboBox } from "util-widget.slint";
 export struct BookInCart {
     id: int,
     isbn: string,
     title: string,
-    authors: [string],
-    publisher: string,
-    price: string,
-    cover: image,
-    quantity: int,
-    total: string,
+    shortage: int,
+    supplier: int,
+    supplier-index: int,
 }
 
 component BookInCartItem inherits Rectangle {   //显示在购买界面的记录
@@ -17,11 +15,16 @@ component BookInCartItem inherits Rectangle {   //显示在购买界面的记录
     in property <float> image-aspect-ratio;
     in property <length> item-width;
 
+    in property <[string]> suppliers;
+    in property <[int]> supplier-ids;
+
     width: root.item-width;
 
     callback clicked <=> touch.clicked;
-    callback update-cart-book(int, int);
-    callback remove-cart-book(int);
+    callback update-shortage-book(int, int);
+    callback update-shortage-supplier(int, int, int);
+    callback remove-shortage-book(int);
+    callback get-supplier-list();
     states [
         pressed when touch.pressed: {
             state.opacity: 0.6;
@@ -39,85 +42,75 @@ component BookInCartItem inherits Rectangle {   //显示在购买界面的记录
                 height: 100%;
             }
 
-            HorizontalLayout {
-                alignment: LayoutAlignment.start;
-                Image {
-                    width: root.image-width;
-                    height: root.image-width / root.image-aspect-ratio;
-                    source: root.book.cover;
+            state := Rectangle {
+                opacity: 0;
+                background: Colors.gray;
+
+                animate opacity { duration: 150ms; }
+            }
+
+            VerticalBox {
+
+                HorizontalLayout {
+                    alignment: LayoutAlignment.start;
+                    Text {
+                        text: "ISBN: " + root.book.isbn;
+                    }
                 }
 
-                Rectangle {
-                    width: root.item-width - root.image-width;
-                    state := Rectangle {
-                        opacity: 0;
-                        background: Colors.gray;
-
-                        animate opacity { duration: 150ms; }
-                    }
-
-                    VerticalBox {
-                        alignment: LayoutAlignment.start;
-
-                        Text {
-                            text: root.book.title;
-                        }
-
-                        Text {
-                            text: root.book.isbn;
-                        }
-
-                        HorizontalLayout {
-                            alignment: LayoutAlignment.start;
-                            Text {
-                                text: "Authors: ";
-                            }
-
-                            for author[index] in root.book.authors: Text {
-                                text: index < root.book.authors.length - 1 ? author + ", " : author;
-                                vertical-alignment: TextVerticalAlignment.center;
-                            }
-                        }
-
-                        Text {
-                            text: root.book.publisher;
-                        }
-
-                        Text {
-                            text: root.book.price;
+                HorizontalLayout {
+                    alignment: LayoutAlignment.start;
+                    Text {
+                        text: "Title: " + root.book.title;
                     }
                 }
             }
         }
-        //考虑不在每一条购物车记录生成价格，这里注释掉
-        // HorizontalLayout {
-        //     alignment: LayoutAlignment.stretch;
-        //     padding-top: 8px;
-        //     padding-bottom: 8px;
-        //     HorizontalLayout {
-        //         alignment: LayoutAlignment.start;
-        //         Text {
-        //             text: "Total: " + root.book.total;
-        //             vertical-alignment: TextVerticalAlignment.center;
-        //         }
-        //     }
 
-            HorizontalLayout {
-                alignment: LayoutAlignment.end;
-                quantity := SpinBox {
-                    value: root.book.quantity;
-                    minimum: 1;
-                    maximum: 100;
-                    edited => {
-                        root.update-cart-book(root.book.id, self.value);
-                    }
+        HorizontalBox {
+            alignment: LayoutAlignment.end;
+
+            Text {
+                text: "Supplier: " + root.book.supplier;
+                vertical-alignment: TextVerticalAlignment.center;
+            }
+
+            supplier-selector := SelectorComboBox {
+                items: root.suppliers;
+                item-ids: root.supplier-ids;
+
+                current-index: root.book.supplier-index;
+
+                get-item-list => {
+                    root.get-supplier-list();
                 }
+            }
 
-                remove := Button {
-                    text: "Remove";
-                    clicked => {
-                        root.remove-cart-book(root.book.id);
-                    }
+            Button {
+                text: "Edit";
+                clicked => {
+                    root.update-shortage-supplier(root.book.id, supplier-selector.current-index, root.supplier-ids[supplier-selector.current-index]);
+                }
+            }
+        }
+
+        HorizontalLayout {
+            alignment: LayoutAlignment.end;
+            padding-top: 8px;
+            padding-bottom: 8px;
+            shortage := SpinBox {
+                value: root.book.shortage;
+                minimum: 0;
+                maximum: 100;
+                edited => {
+                    root.update-shortage-book(root.book.id, shortage.value);
+                }
+            }
+
+            remove-button := Button {
+                text: "Remove";
+                clicked => {
+                    root.remove-shortage-book(root.book.id);
                 }
             }
         }
@@ -132,9 +125,13 @@ export component BookCartView inherits Window {
     in property <length> item-width: 300px;
     in property <length> window-width: 800px;
     in property <length> window-height: 600px;
+    in property <[string]> suppliers;
+    in property <[int]> supplier-ids;
 
     callback update-cart-book(int, int);
     callback remove-cart-book(int);
+    callback update-cart-supplier(int, int, int);
+    callback get-supplier-list();
     callback checkout();
 
     VerticalBox {
@@ -142,20 +139,29 @@ export component BookCartView inherits Window {
         ListView {
             preferred-height: root.window-height;
 
-            for book[index] in root.books: VerticalLayout {
-                BookInCartItem {
-                    book: book;
-                    image-width: root.image-width;
-                    image-aspect-ratio: root.image-aspect-ratio;
-                    item-width: root.item-width;
+            for book[index] in root.books: BookInCartItem {
+                book: book;
+                image-width: root.image-width;
+                image-aspect-ratio: root.image-aspect-ratio;
+                item-width: root.item-width;
 
-                    update-cart-book(id, quantity) => {
-                        root.update-cart-book(id, quantity);
-                    }
+                suppliers: root.suppliers;
+                supplier-ids: root.supplier-ids;
 
-                    remove-cart-book(id) => {
-                        root.remove-cart-book(id);
-                    }
+                get-supplier-list => {
+                    root.get-supplier-list();
+                }
+
+                update-shortage-book(id, shortage) => {
+                    root.update-cart-book(id, shortage);
+                }
+
+                update-shortage-supplier(id, supplier-index, supplier) => {
+                    root.update-cart-supplier(id, supplier-index, supplier);
+                }
+
+                remove-shortage-book(id) => {
+                    root.remove-cart-book(id);
                 }
             }
         }
@@ -164,7 +170,6 @@ export component BookCartView inherits Window {
             alignment: LayoutAlignment.end;
             padding-top: 8px;
             padding-bottom: 8px;
-            
             checkout-button := Button {
                 text: "Checkout";
                 clicked => {

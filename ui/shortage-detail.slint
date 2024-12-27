@@ -1,0 +1,91 @@
+import { VerticalBox, Button, ListView, HorizontalBox } from "std-widgets.slint";
+
+export struct BookInShortage {
+    id: int,
+    book-id: int,
+    supplier-id: int,
+    shortage-quantity: int,
+}
+
+export struct ShortageDetail {
+    id: int,
+    registeration-date: string,
+    is-resolved: bool,
+    shortages: [BookInShortage],
+}
+
+component ShortageItem inherits Rectangle {
+    in property <BookInShortage> shortage;
+    in property <length> item-width;
+
+    VerticalLayout {
+        alignment: LayoutAlignment.start;
+        width: root.item-width;
+        Rectangle {
+            touch := TouchArea {
+                width: 100%;
+                height: 100%;
+            }
+
+            state := Rectangle {
+                opacity: 0;
+                background: Colors.gray;
+
+                animate opacity { duration: 150ms; }
+            }
+
+            VerticalBox {
+                alignment: LayoutAlignment.start;
+                Text {
+                    text: "Id: " + root.shortage.id;
+                }
+
+                Text {
+                    text: "Book id: " + root.shortage.book-id;
+                }
+
+                Text {
+                    text: "Supplier id: " + root.shortage.supplier-id;
+                }
+
+                Text {
+                    text: "Shortage quantity: " + root.shortage.shortage-quantity;
+                }
+            }
+        }
+    }
+}
+
+export component ShortageDetailView inherits Window {
+    in property <ShortageDetail> shortage-detail;
+    in property <length> item-width;
+    in property <length> window-width;
+    in property <length> window-height;
+
+    VerticalBox {
+        alignment: LayoutAlignment.start;
+
+        Text {
+            text: "Id: " + root.shortage-detail.id;
+        }
+
+        Text {
+            text: "Registeration date: " + root.shortage-detail.registeration-date;
+        }
+
+        Text {
+            text: "Is resolved: " + (root.shortage-detail.is-resolved ? "Yes" : "No");
+        }
+
+        VerticalLayout {
+            alignment: LayoutAlignment.start;
+            ListView {
+                preferred-height: root.window-height;
+                for shortage in root.shortage-detail.shortages: ShortageItem {
+                    shortage: shortage;
+                    item-width: root.item-width;
+                }
+            }
+        }
+    }
+}

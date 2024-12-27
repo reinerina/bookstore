@@ -153,3 +153,26 @@ pub struct ShipOrderAutoRequest {
     pub nonce: String,
     pub order_id: u32,
 }
+
+#[derive(Serialize, Debug, Default)]
+pub struct ShortageListRequest {
+    pub token: String,
+    pub tag: String,
+    pub nonce: String,
+}
+
+#[derive(Serialize, Debug, Default)]
+pub struct ShortageDetailRequest {
+    pub token: String,
+    pub tag: String,
+    pub nonce: String,
+    pub shortage_id: u32,
+}
+
+#[derive(Serialize, Debug, Default)]
+pub struct ShortageCreateRequest {
+    pub book_suppliers: Vec<(u32, u32, u32)>,
+    pub token: String,
+    pub tag: String,
+    pub nonce: String,
+}

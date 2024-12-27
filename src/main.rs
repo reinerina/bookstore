@@ -1,20 +1,11 @@
-use bookstore_admin::network::{
-    url_get_image_buffer, url_post, AdminDetailRequest, AdminDetailResponse, AdminLoginRequest,
-    AdminLoginResponse, AdminRegisterRequest, AdminRegisterResponse, AuthorListRequest,
-    AuthorListResponse, BookAddRequest, BookAddResponse, BookDetailRequest, BookDetailResponse,
-    BookListRequest, BookListResponse, BookUpdateRequest, BookUpdateResponse,
-    CustomerBalanceRequest, CustomerBalanceResponse, CustomerCreditRequest, CustomerCreditResponse,
-    CustomerListRequest, CustomerListResponse, CustomerOrderListRequest, CustomerOrderListResponse,
-    KeywordListRequest, KeywordListResponse, LocationListRequest, LocationListResponse,
-    PublisherListRequest, PublisherListResponse, SeriesListRequest, SeriesListResponse,
-    ShipOrderAutoRequest, ShipOrderAutoResponse, StockChangeRequest, StockChangeResponse,
-    StockTransferRequest, StockTransferResponse, SupplierListRequest, SupplierListResponse,
-};
+use bookstore_admin::network::*;
+use bookstore_admin::util::cart::ShoppingCart;
 use bookstore_admin::util::runtime::Runtime;
 use bookstore_admin::util::token::{AdminToken, Token};
 use slint::{Image, Model, ModelRc, VecModel};
 
 slint::include_modules!();
+
 fn main() -> Result<(), slint::PlatformError> {
     pretty_env_logger::init();
 
@@ -22,6 +13,7 @@ fn main() -> Result<(), slint::PlatformError> {
     let rt = Runtime::new().unwrap();
 
     let admin_token = AdminToken::default();
+    let shortage_cart = ShoppingCart::default();
 
     main_window.on_user_login({
         let main_window = main_window.as_weak();
@@ -2037,7 +2029,7 @@ fn main() -> Result<(), slint::PlatformError> {
                                         nonce: token.nonce,
                                     },
                                 )
-                                .await
+                                    .await
                                 {
                                     Ok(response) => Ok(response),
                                     Err(e) => Err(e),
@@ -2076,7 +2068,7 @@ fn main() -> Result<(), slint::PlatformError> {
                     }
                 }
             })
-            .unwrap();
+                .unwrap();
         }
     });
 
@@ -2119,6 +2111,441 @@ fn main() -> Result<(), slint::PlatformError> {
                     Ok(_) => {
                         let main_window = main_window.unwrap();
                         main_window.invoke_get_customer_orders_list();
+                    }
+                    Err(e) => {
+                        log::error!("{}", e.to_string());
+                    }
+                }
+            })
+            .unwrap();
+        }
+    });
+
+    main_window.on_add_shortage({
+        let rt = rt.as_weak();
+        let shortage_cart = shortage_cart.as_weak();
+        move |book_id| {
+            let rt = rt.clone();
+            let shortage_cart = shortage_cart.clone();
+            slint::spawn_local(async move {
+                let rt = rt.unwrap();
+                let shortage_cart = shortage_cart.unwrap();
+                rt.spawn(async move {
+                    shortage_cart.add_item_default(book_id as u32).await;
+                })
+                .await
+                .unwrap();
+            })
+            .unwrap();
+        }
+    });
+
+    main_window.on_remove_cart_book({
+        let rt = rt.as_weak();
+        let main_window = main_window.as_weak();
+        let shortage_cart = shortage_cart.as_weak();
+        move |book_id, books_in_cart| {
+            let rt = rt.clone();
+            let shortage_cart = shortage_cart.clone();
+            let main_window = main_window.clone();
+            slint::spawn_local(async move {
+                let rt = rt.unwrap();
+                let shortage_cart = shortage_cart.unwrap();
+                rt.spawn(async move {
+                    shortage_cart.remove_item(book_id as u32).await;
+                })
+                .await
+                .unwrap();
+                let books_in_cart = books_in_cart
+                    .iter()
+                    .filter(|book| book.id != book_id)
+                    .collect::<Vec<_>>();
+                let main_window = main_window.unwrap();
+                main_window.set_books_in_cart(ModelRc::new(VecModel::from(books_in_cart)));
+            })
+            .unwrap();
+        }
+    });
+
+    main_window.on_update_cart_book({
+        let rt = rt.as_weak();
+        let main_window = main_window.as_weak();
+        let shortage_cart = shortage_cart.as_weak();
+        move |book_id, shortage, books_in_cart| {
+            let rt = rt.clone();
+            let shortage_cart = shortage_cart.clone();
+            let main_window = main_window.clone();
+            slint::spawn_local(async move {
+                let rt = rt.unwrap();
+                let shortage_cart = shortage_cart.unwrap();
+                rt.spawn(async move {
+                    shortage_cart
+                        .set_item(book_id as u32, shortage as u32)
+                        .await;
+                })
+                .await
+                .unwrap();
+                let books_in_cart = books_in_cart
+                    .iter()
+                    .into_iter()
+                    .map(|book| {
+                        if book.id == book_id {
+                            BookInCart {
+                                id: book_id,
+                                title: book.title.into(),
+                                isbn: book.isbn.into(),
+                                shortage,
+                                supplier: book.supplier,
+                                supplier_index: book.supplier_index,
+                            }
+                        } else {
+                            book
+                        }
+                    })
+                    .collect::<Vec<_>>();
+                let main_window = main_window.unwrap();
+                main_window.set_books_in_cart(ModelRc::new(VecModel::from(books_in_cart)));
+            })
+            .unwrap();
+        }
+    });
+
+    main_window.on_update_cart_supplier({
+        let main_window = main_window.as_weak();
+        let shortage_cart = shortage_cart.as_weak();
+        move |book_id, index, supplier, books_in_cart| {
+            let main_window = main_window.clone();
+            let shortage_cart = shortage_cart.clone();
+            slint::spawn_local(async move {
+                let shortage_cart = shortage_cart.unwrap();
+                shortage_cart
+                    .set_item_supplier(book_id as u32, supplier as u32, index as u32)
+                    .await;
+                let books_in_cart = books_in_cart
+                    .iter()
+                    .into_iter()
+                    .map(|book| {
+                        if book.id == book_id {
+                            BookInCart {
+                                id: book_id,
+                                title: book.title.into(),
+                                isbn: book.isbn.into(),
+                                shortage: book.shortage,
+                                supplier,
+                                supplier_index: index,
+                            }
+                        } else {
+                            book
+                        }
+                    })
+                    .collect::<Vec<_>>();
+                let main_window = main_window.unwrap();
+                main_window.set_books_in_cart(ModelRc::new(VecModel::from(books_in_cart)));
+            })
+            .unwrap();
+        }
+    });
+
+    main_window.on_get_supplier_list({
+        let rt = rt.as_weak();
+        let main_window = main_window.as_weak();
+        move || {
+            let rt = rt.clone();
+            let main_window = main_window.clone();
+            slint::spawn_local(async move {
+                let rt = rt.unwrap();
+                match rt
+                    .spawn(async move {
+                        match url_post::<SupplierListResponse, SupplierListRequest>(
+                            "/supplier/list",
+                            Default::default(),
+                        )
+                        .await
+                        {
+                            Ok(response) => Ok(response),
+                            Err(e) => Err(e),
+                        }
+                    })
+                    .await
+                    .unwrap()
+                {
+                    Ok(supplier_list) => {
+                        let supplier_ids = supplier_list
+                            .suppliers
+                            .iter()
+                            .map(|supplier| supplier.supplier_id as i32)
+                            .collect::<Vec<_>>();
+                        let suppliers = supplier_list
+                            .suppliers
+                            .into_iter()
+                            .map(|supplier| supplier.name.into())
+                            .collect::<Vec<_>>();
+                        let main_window = main_window.unwrap();
+                        main_window.set_suppliers(ModelRc::new(VecModel::from(suppliers)));
+                        main_window.set_supplier_ids(ModelRc::new(VecModel::from(supplier_ids)));
+                    }
+                    Err(e) => {
+                        log::error!("{}", e.to_string());
+                    }
+                }
+            })
+            .unwrap();
+        }
+    });
+
+    main_window.on_get_cart_book_list({
+        let rt = rt.as_weak();
+        let shortage_cart = shortage_cart.as_weak();
+        let main_window = main_window.as_weak();
+        let admin_token = admin_token.as_weak();
+        move || {
+            let rt = rt.clone();
+            let shortage_cart = shortage_cart.clone();
+            let main_window = main_window.clone();
+            let admin_token = admin_token.clone();
+            slint::spawn_local(async move {
+                let rt = rt.unwrap();
+                let shortage_cart = shortage_cart.unwrap();
+                let admin_token = admin_token.unwrap();
+                match rt
+                    .spawn(async move {
+                        match admin_token.get().await {
+                            Some(token) => {
+                                let cart_items = shortage_cart.get_total_items().await;
+                                let mut books_in_cart = Vec::with_capacity(cart_items.len());
+                                for (book_id, quantity) in cart_items.iter() {
+                                    match url_post::<BookDetailResponse, BookDetailRequest>(
+                                        "/admin/book/detail",
+                                        BookDetailRequest {
+                                            token: token.token.clone(),
+                                            tag: token.tag.clone(),
+                                            nonce: token.nonce.clone(),
+                                            book_id: *book_id,
+                                        },
+                                    )
+                                    .await
+                                    {
+                                        Ok(book_detail) => {
+                                            books_in_cart.push((book_detail, *quantity));
+                                        }
+                                        Err(e) => anyhow::bail!(e),
+                                    }
+                                }
+                                Ok(books_in_cart)
+                            }
+                            None => anyhow::bail!("token not found"),
+                        }
+                    })
+                    .await
+                    .unwrap()
+                {
+                    Ok(cart_items) => {
+                        let books_in_cart = cart_items
+                            .into_iter()
+                            .map(|(book, quantity)| {
+                                let book_id = book.book_id as i32;
+                                let title = book.title.into();
+                                let isbn = book.isbn.into();
+
+                                BookInCart {
+                                    id: book_id,
+                                    title,
+                                    isbn,
+                                    shortage: quantity.0 as i32,
+                                    supplier: quantity.1 as i32,
+                                    supplier_index: quantity.2 as i32,
+                                }
+                            })
+                            .collect::<Vec<_>>();
+                        let main_window = main_window.unwrap();
+                        main_window.set_books_in_cart(ModelRc::new(VecModel::from(books_in_cart)));
+                    }
+                    Err(e) => {
+                        // let main_window = main_window.unwrap();
+                        // main_window.set_error_add_to_cart(true);
+                        // main_window.set_error_add_to_cart_message(e.to_string().into());
+                        log::error!("{}", e.to_string());
+                    }
+                }
+            })
+            .unwrap();
+        }
+    });
+
+    main_window.on_checkout({
+        let rt = rt.as_weak();
+        let main_window = main_window.as_weak();
+        let shortage_cart = shortage_cart.as_weak();
+        let admin_token = admin_token.as_weak();
+        move || {
+            let rt = rt.clone();
+            let main_window = main_window.clone();
+            let shortage_cart = shortage_cart.clone();
+            let admin_token = admin_token.clone();
+            slint::spawn_local(async move {
+                let rt = rt.unwrap();
+                let shortage_cart = shortage_cart.unwrap();
+                let admin_token = admin_token.unwrap();
+
+                match rt
+                    .spawn(async move {
+                        match admin_token.get().await {
+                            Some(token) => {
+                                match url_post::<ShortageCreateResponse, ShortageCreateRequest>(
+                                    "/shortage/create",
+                                    ShortageCreateRequest {
+                                        token: token.token,
+                                        tag: token.tag,
+                                        nonce: token.nonce,
+                                        book_suppliers: shortage_cart
+                                            .get_total_items()
+                                            .await
+                                            .into_iter()
+                                            .map(|(book_id, (quantity, supplier, _))| {
+                                                (book_id, supplier, quantity)
+                                            })
+                                            .collect(),
+                                    },
+                                )
+                                .await
+                                {
+                                    Ok(response) => {
+                                        shortage_cart.clear().await;
+                                        Ok(response)
+                                    }
+                                    Err(e) => Err(e),
+                                }
+                            }
+                            None => anyhow::bail!("token not found"),
+                        }
+                    })
+                    .await
+                    .unwrap()
+                {
+                    Ok(_) => {
+                        let main_window = main_window.unwrap();
+                        main_window.set_books_in_cart(ModelRc::new(VecModel::from(Vec::new())));
+                    }
+                    Err(e) => {
+                        log::error!("{}", e.to_string());
+                    }
+                }
+            })
+            .unwrap();
+        }
+    });
+
+    main_window.on_get_shortage_order_list({
+        let rt = rt.as_weak();
+        let admin_token = admin_token.as_weak();
+        let main_window = main_window.as_weak();
+        move || {
+            let rt = rt.clone();
+            let admin_token = admin_token.clone();
+            let main_window = main_window.clone();
+            slint::spawn_local(async move {
+                let rt = rt.unwrap();
+                let admin_token = admin_token.unwrap();
+                match rt
+                    .spawn(async move {
+                        match admin_token.get().await {
+                            Some(token) => {
+                                match url_post::<ShortageListResponse, ShortageListRequest>(
+                                    "/admin/shortage/list",
+                                    ShortageListRequest {
+                                        token: token.token,
+                                        tag: token.tag,
+                                        nonce: token.nonce,
+                                    },
+                                )
+                                .await
+                                {
+                                    Ok(response) => Ok(response),
+                                    Err(e) => Err(e),
+                                }
+                            }
+                            None => Err(anyhow::anyhow!("token not found")),
+                        }
+                    })
+                    .await
+                    .unwrap()
+                {
+                    Ok(order_list) => {
+                        let orders = order_list
+                            .shortages
+                            .into_iter()
+                            .map(|shortage| ShortageOrder {
+                                id: shortage.shortage_id as i32,
+                                registeration_date: shortage.registration_date.into(),
+                                is_resolved: shortage.is_resolved,
+                            })
+                            .collect::<Vec<_>>();
+                        let main_window = main_window.unwrap();
+                        main_window.set_shortage_orders(ModelRc::new(VecModel::from(orders)));
+                    }
+                    Err(e) => {
+                        log::error!("{}", e.to_string());
+                    }
+                }
+            })
+            .unwrap();
+        }
+    });
+
+    main_window.on_open_shortage_detail({
+        let rt = rt.as_weak();
+        let admin_token = admin_token.as_weak();
+        move |shortage_id| {
+            let rt = rt.clone();
+            let admin_token = admin_token.clone();
+            slint::spawn_local(async move {
+                let rt = rt.unwrap();
+                let admin_token = admin_token.unwrap();
+                match rt
+                    .spawn(async move {
+                        match admin_token.get().await {
+                            Some(token) => {
+                                match url_post::<ShortageDetailResponse, ShortageDetailRequest>(
+                                    "/admin/shortage/detail",
+                                    ShortageDetailRequest {
+                                        token: token.token,
+                                        tag: token.tag,
+                                        nonce: token.nonce,
+                                        shortage_id: shortage_id as u32,
+                                    },
+                                )
+                                .await
+                                {
+                                    Ok(response) => Ok(response),
+                                    Err(e) => Err(e),
+                                }
+                            }
+                            None => Err(anyhow::anyhow!("token not found")),
+                        }
+                    })
+                    .await
+                    .unwrap()
+                {
+                    Ok(shortage_detail) => {
+                        let books = shortage_detail
+                            .items
+                            .iter()
+                            .map(|book| BookInShortage {
+                                id: book.0 as i32,
+                                book_id: book.1 as i32,
+                                supplier_id: book.2 as i32,
+                                shortage_quantity: book.3 as i32,
+                            })
+                            .collect::<Vec<_>>();
+                        let shortage = ShortageDetail {
+                            id: shortage_id,
+                            registeration_date: shortage_detail.registration_date.into(),
+                            is_resolved: shortage_detail.is_resolved,
+                            shortages: ModelRc::new(VecModel::from(books)),
+                        };
+                        let shortage_detail_window = ShortageDetailWindow::new().unwrap();
+                        shortage_detail_window.set_shortage_detail(shortage);
+                        shortage_detail_window.show().unwrap();
                     }
                     Err(e) => {
                         log::error!("{}", e.to_string());

@@ -4,7 +4,7 @@ use tokio::sync::RwLock;
 
 #[derive(Debug, Clone, Default)]
 pub struct Cart {
-    book_quantity: HashMap<u32, u32>,
+    book_quantity: HashMap<u32, (u32, u32, u32)>,
 }
 
 #[derive(Debug, Clone, Default)]
@@ -41,14 +41,29 @@ impl ShoppingCart {
     pub async fn add_item(&self, book_id: u32, quantity: u32) {
         let mut inner = self.inner.write().await;
         let cart = &mut inner.book_quantity;
-        let cart_quantity = cart.entry(book_id).or_insert(0);
-        *cart_quantity += quantity;
+        let cart_quantity = cart.entry(book_id).or_insert((0, 0, 0));
+        cart_quantity.0 += quantity;
+    }
+
+    pub async fn add_item_default(&self, book_id: u32) {
+        let mut inner = self.inner.write().await;
+        let cart = &mut inner.book_quantity;
+        cart.entry(book_id).or_insert((0, 0, 0));
     }
 
     pub async fn set_item(&self, book_id: u32, quantity: u32) {
         let mut inner = self.inner.write().await;
         let cart = &mut inner.book_quantity;
-        cart.insert(book_id, quantity);
+        let supplier_id = cart.get(&book_id).unwrap_or(&(0, 0, 0)).1;
+        let supplier_index = cart.get(&book_id).unwrap_or(&(0, 0, 0)).2;
+        cart.insert(book_id, (quantity, supplier_id, supplier_index));
+    }
+
+    pub async fn set_item_supplier(&self, book_id: u32, supplier_id: u32, supplier_index: u32) {
+        let mut inner = self.inner.write().await;
+        let cart = &mut inner.book_quantity;
+        let quantity = cart.get(&book_id).unwrap_or(&(0, 0, 0)).0;
+        cart.insert(book_id, (quantity, supplier_id, supplier_index));
     }
 
     pub async fn remove_item(&self, book_id: u32) {
@@ -60,10 +75,10 @@ impl ShoppingCart {
     pub async fn get_total(&self) -> u32 {
         let inner = self.inner.read().await;
         let cart = &inner.book_quantity;
-        cart.values().sum()
+        cart.iter().map(|(_, v)| v.0).sum()
     }
 
-    pub async fn get_total_items(&self) -> Vec<(u32, u32)> {
+    pub async fn get_total_items(&self) -> Vec<(u32, (u32, u32, u32))> {
         let inner = self.inner.read().await;
         let cart = &inner.book_quantity;
         cart.iter().map(|(k, v)| (*k, *v)).collect()

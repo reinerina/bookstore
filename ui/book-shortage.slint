@@ -1,26 +1,18 @@
 import { VerticalBox, Button, ListView, HorizontalBox } from "std-widgets.slint";
-import { Book } from "book-management.slint";
 
-//这里的基本逻辑完成了，样式需要修改
-export struct BookItem{
-    book: Book,
-    quantity: int,
-}
-
-export struct restockOrder {
+export struct ShortageOrder {
     id: int,
-    restocked_books: [BookItem] ,
-    order_date: string,
+    registeration_date: string,
+    is_resolved: bool,
 }
 
-component restockHistoryItem inherits Rectangle {
-    in property <restockOrder> order;
+component ShortageHistoryItem inherits Rectangle {
+    in property <ShortageOrder> order;
     in property <length> item-width;
 
     callback view-order(int);
     callback delete-order(int);
-    callback confirm-receipt(string);
-
+    callback create-purchase-order(int);
 
     width: root.item-width;
     callback clicked <=> touch.clicked;
@@ -50,32 +42,18 @@ component restockHistoryItem inherits Rectangle {
                 animate opacity { duration: 150ms; }
             }
 
-            VerticalLayout {
+            VerticalBox {
+                alignment: LayoutAlignment.start;
+                Text {
+                    text: "Id: " + root.order.id;
+                }
 
-                HorizontalLayout {
-                    alignment: LayoutAlignment.start;
-                    Text {
-                        text: "Id" + root.order.id;
-                    }
+                Text {
+                    text: "Registeration date: " + root.order.registeration_date;
+                }
 
-                    VerticalBox {
-                        alignment: LayoutAlignment.start;
-                        ListView {
-                            for BookItem[index] in root.order.restocked-books: VerticalBox {
-                                Text {
-                                    text: "Title: " + root.order.restocked_books[index].book.title;
-                                }
-
-                                Text {
-                                    text: "Quantity: " + root.order.restocked_books[index].quantity;
-                                }
-                            }
-                        }
-                    }
-
-                    Text {
-                        text: "Order date: " + root.order.order_date;
-                    }
+                Text {
+                    text: "Is resolved: " + (root.order.is_resolved ? "Yes" : "No");
                 }
             }
         }
@@ -99,41 +77,45 @@ component restockHistoryItem inherits Rectangle {
             }
 
             Button {
-                text: "Confirm receipt";
+                text: "Create Purchase Order";
                 clicked => {
-                    root.confirm-receipt(root.order.id);
+                    root.create-purchase-order(root.order.id);
                 }
             }
         }
     }
 }
 
-export component restockHistory inherits Window {
+export component ShortageHistory inherits Window {
     in property <length> item-width: 300px;
-    in property <[restockOrder]> orders;
+    in property <[ShortageOrder]> orders;
     in property <length> window-width: 800px;
     in property <length> window-height: 600px;
 
+    callback open-shortage-detail(int);
     callback view-order(int);
     callback delete-order(int);
-    callback confirm-receipt(string);
+    callback create-purchase-order(int);
 
     VerticalBox {
         alignment: LayoutAlignment.start;
         ListView {
             preferred-height: root.window-height;
-            for restockOrder in root.orders: restockHistoryItem {
-                order: restockOrder;
+            for order[index] in root.orders: ShortageHistoryItem {
+                order: order;
                 item-width: root.item-width;
-                view-order =>{
-                    root.view-order(restockOrder.id);
-                
+                view-order => {
+                    root.view-order(order.id);
                 }
                 delete-order => {
-                    root.delete-order(restockOrder.id);
+                    root.delete-order(order.id);
                 }
-                confirm-receipt => {
-                    root.confirm-receipt(restockOrder.id);
+                create-purchase-order => {
+                    root.create-purchase-order(order.id);
+                }
+
+                clicked => {
+                    root.open-shortage-detail(order.id);
                 }
             }
         }

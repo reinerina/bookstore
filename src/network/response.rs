@@ -243,3 +243,28 @@ pub struct CustomerOrderListResponse {
 pub struct ShipOrderAutoResponse {
     pub message: String,
 }
+
+#[derive(Debug, Deserialize)]
+pub struct ShortageListItemResponse {
+    pub shortage_id: u32,
+    pub registration_date: String,
+    pub is_resolved: bool,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct ShortageListResponse {
+    pub shortages: Vec<ShortageListItemResponse>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct ShortageDetailResponse {
+    pub shortage_id: u32,
+    pub registration_date: String,
+    pub is_resolved: bool,
+    pub items: Vec<(u32, u32, u32, u32, u32)>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct ShortageCreateResponse {
+    pub shortage_id: u32,
+}

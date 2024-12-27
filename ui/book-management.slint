@@ -21,6 +21,7 @@ component BookListItem inherits Rectangle {
 
     callback clicked <=> touch.clicked;
     callback edit-stock(int, int);
+    callback add-shortage(int);
 
     states [
         pressed when touch.pressed: {
@@ -33,6 +34,7 @@ component BookListItem inherits Rectangle {
 
     VerticalLayout {
         alignment: LayoutAlignment.start;
+        width: root.item-width;
         Rectangle {
             touch := TouchArea {
                 width: 100%;
@@ -102,6 +104,19 @@ component BookListItem inherits Rectangle {
                 }
             }
         }
+
+        if (root.has-login): HorizontalLayout {
+            alignment: LayoutAlignment.end;
+            padding-bottom: 8px;
+            padding-top: 8px;
+            Button {
+                text: "Add Shortage";
+
+                clicked => {
+                    root.add-shortage(root.book.id);
+                }
+            }
+        }
     }
 }
 
@@ -118,6 +133,7 @@ export component InventoryManagement inherits Window {
 
     callback open-book-detail(int);
     callback edit-stock(int, int);
+    callback add-shortage(int);
     callback add-book();
     //add-book负责弹出添加新书籍的窗口
 
@@ -138,6 +154,10 @@ export component InventoryManagement inherits Window {
                 edit-stock(id, quantity) => {
                     root.edit-stock(book.id, quantity); // 处理库存编辑
                 }
+
+                add-shortage(id) => {
+                    root.add-shortage(id); // 处理缺货添加
+                }
             }
         }
 
@@ -145,6 +165,7 @@ export component InventoryManagement inherits Window {
             alignment: LayoutAlignment.end;
             padding-top: 8px;
             padding-bottom: 8px;
+            padding-right: 8px;
             add-book-button := Button {
                 text: "Add Book";
                 clicked => {
