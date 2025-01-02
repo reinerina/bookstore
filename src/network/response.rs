@@ -480,3 +480,8 @@ pub struct OrderDetailResponse {
     pub shipping_address: String,
     pub items: Vec<OrderItemResponse>,
 }
+
+#[derive(Debug, Deserialize)]
+pub struct OrderPaymentResponse {
+    pub message: String,
+}

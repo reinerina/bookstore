@@ -44,6 +44,7 @@ export component MainWindow inherits Window {
     callback get-order-history-list();
     callback open-book-detail(int);
     callback open-order-detail(int);
+    callback pay-order(int);
 
     callback get-book-list();
     callback get-search-book-list(string, int);
@@ -194,6 +195,10 @@ export component MainWindow inherits Window {
 
                     open-order-detail(id) => {
                         root.open-order-detail(id);
+                    }
+
+                    pay-order(id) => {
+                        root.pay-order(id);
                     }
                 }
 

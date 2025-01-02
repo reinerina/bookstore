@@ -17,6 +17,7 @@ component OrderHistoryItem inherits Rectangle {
 
     width: root.item-width;
     callback clicked <=> touch.clicked;
+    callback pay-order(int);
 
     states [
         pressed when touch.pressed: {
@@ -113,6 +114,7 @@ component OrderHistoryItem inherits Rectangle {
             Button {
                 text: "Pay";
                 clicked => {
+                    root.pay-order(order.id);
                 }
             }
 
@@ -132,6 +134,7 @@ export component OrderHistoryView inherits Window {
     in property <length> window-height: 600px;
 
     callback open-order-detail(int);
+    callback pay-order(int);
 
     VerticalBox {
         alignment: LayoutAlignment.start;
@@ -143,6 +146,10 @@ export component OrderHistoryView inherits Window {
 
                 clicked => {
                     root.open-order-detail(order.id);
+                }
+
+                pay-order(int) => {
+                    root.pay-order(order.id);
                 }
             }
         }

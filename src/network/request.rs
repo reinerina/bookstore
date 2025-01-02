@@ -80,3 +80,11 @@ pub struct OrderDetailRequest {
     pub tag: String,
     pub nonce: String,
 }
+
+#[derive(Serialize, Debug, Default)]
+pub struct OrderPaymentRequest {
+    pub token: String,
+    pub tag: String,
+    pub nonce: String,
+    pub status: String,
+}

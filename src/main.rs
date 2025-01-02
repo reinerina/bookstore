@@ -1022,6 +1022,55 @@ fn main() -> Result<(), slint::PlatformError> {
         }
     });
 
+    main_window.on_pay_order({
+        let rt = rt.as_weak();
+        let main_window = main_window.as_weak();
+        let user_token = user_token.as_weak();
+        move |order_id| {
+            let rt = rt.clone();
+            let main_window = main_window.clone();
+            let user_token = user_token.clone();
+            slint::spawn_local(async move {
+                let rt = rt.unwrap();
+                let user_token = user_token.unwrap();
+                match rt
+                    .spawn(async move {
+                        match user_token.get().await {
+                            Some(token) => {
+                                match url_post::<OrderPaymentResponse, OrderPaymentRequest>(
+                                    &format!("order/{}/payment", order_id),
+                                    OrderPaymentRequest {
+                                        token: token.token,
+                                        tag: token.tag,
+                                        nonce: token.nonce,
+                                        status: "paid".to_string(),
+                                    },
+                                )
+                                .await
+                                {
+                                    Ok(_) => Ok(()),
+                                    Err(e) => Err(e),
+                                }
+                            }
+                            None => anyhow::bail!("user token not found"),
+                        }
+                    })
+                    .await
+                    .unwrap()
+                {
+                    Ok(_) => {
+                        let main_window = main_window.unwrap();
+                        main_window.invoke_get_order_history_list();
+                    }
+                    Err(e) => {
+                        log::error!("{}", e.to_string());
+                    }
+                }
+            })
+            .unwrap();
+        }
+    });
+
     main_window.show()?;
 
     slint::run_event_loop()?;
