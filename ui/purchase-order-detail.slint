@@ -1,0 +1,136 @@
+import { VerticalBox, Button, ListView } from "std-widgets.slint";
+
+export struct BookInPurchaseOrder {
+
+    book-id: int,
+    isbn: string,
+    supplier: string,
+    publisher: string,
+    quantity: int,
+    total_price: string,
+}
+
+export struct PurchaseOrderDetail {
+    id: int,
+    order_date: string,
+    expected_delivery_date: string,
+    status: string,
+    total_price: string,
+    books: [BookInPurchaseOrder],
+}
+
+component PurchaseOrderDetailItem inherits Rectangle {
+    in property <BookInPurchaseOrder> book;
+    in property <length> item-width;
+
+    width: root.item-width;
+
+    callback clicked <=> touch.clicked;
+
+    states [
+        pressed when touch.pressed: {
+            state.opacity: 0.6;
+        }
+        hover when touch.has-hover: {
+            state.opacity: 0.4;
+        }
+    ]
+
+    VerticalLayout {
+        alignment: LayoutAlignment.start;
+        width: root.item-width;
+        Rectangle {
+            touch := TouchArea {
+                width: 100%;
+                height: 100%;
+            }
+
+            state := Rectangle {
+                opacity: 0;
+                background: Colors.gray;
+
+                animate opacity { duration: 150ms; }
+            }
+
+            VerticalLayout {
+                alignment: LayoutAlignment.start;
+                HorizontalLayout {
+                    alignment: LayoutAlignment.start;
+                    VerticalBox {
+                        alignment: LayoutAlignment.start;
+                        Text {
+                            text: "Book ID: " + root.book.book-id;
+                        }
+
+                        Text {
+                            text: "ISBN: " + root.book.isbn;
+                        }
+
+                        Text {
+                            text: "Supplier: " + root.book.supplier;
+                        }
+                    }
+
+                    VerticalBox {
+                        alignment: LayoutAlignment.start;
+
+                        Text {
+                            text: "Publisher: " + root.book.publisher;
+                        }
+
+                        Text {
+                            text: "Quantity: " + root.book.quantity;
+                        }
+
+                        Text {
+                            text: "Total Price: " + root.book.total_price;
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+export component PurchaseOrderDetailView inherits Window {
+    in property <PurchaseOrderDetail> purchase-order-detail;
+    in property <length> item-width;
+    in property <length> window-width;
+    in property <length> window-height;
+
+    VerticalBox {
+        alignment: LayoutAlignment.start;
+
+        Text {
+            text: "Order ID: " + root.purchase-order-detail.id;
+        }
+
+        Text {
+            text: "Order Date: " + root.purchase-order-detail.order_date;
+        }
+
+        Text {
+            text: "Expected Delivery Date: " + root.purchase-order-detail.expected_delivery_date;
+        }
+
+        Text {
+            text: "Status: " + root.purchase-order-detail.status;
+        }
+
+        VerticalLayout {
+            alignment: LayoutAlignment.start;
+            ListView {
+                preferred-height: root.window-height;
+
+                for book[index] in root.purchase-order-detail.books: PurchaseOrderDetailItem {
+                    book: book;
+                    item-width: root.item-width;
+                }
+            }
+        }
+
+        Text {
+            text: "Total Price: " + root.purchase-order-detail.total_price;
+        }
+    }
+}

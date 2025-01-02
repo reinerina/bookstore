@@ -13,7 +13,7 @@ export struct CustomerInDetail {
 component customerItem inherits Rectangle {
     in property <CustomerInDetail> customer;
     in property <length> item-width: 300px;
-    in property <bool> has-login: true;
+    in property <bool> has-login;
     in-out property <string> new-balance;
     callback edit-credit(int, int);
     callback edit-balance(int, string);

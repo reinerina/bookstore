@@ -2,17 +2,20 @@ import { VerticalBox, HorizontalBox, ListView, LineEdit, Button, ComboBox } from
 export struct CustomerInSearch {
     id: int,
     username: string,
-    password: string,
     realname: string,
     address: string,
     email: string,
     account-banlance: string,
-    credit-level: string,
+    credit-level: int,
 }
 
 component CustomerSearchItem inherits Rectangle {
     in property <CustomerInSearch> customer;
     in property <length> item-width;
+    in property <bool> has-login;
+    in-out property <string> new-balance;
+    callback edit-credit(int, int);
+    callback edit-balance(int, string);
 
     width: root.item-width;
 
@@ -56,10 +59,6 @@ component CustomerSearchItem inherits Rectangle {
                         Text {
                             text: "Account name: " + root.customer.username;
                         }
-                        
-                        Text {
-                            text: "Password: " + root.customer.password;
-                        }
 
                         Text {
                             text: "Real name: " + root.customer.realname;
@@ -80,6 +79,49 @@ component CustomerSearchItem inherits Rectangle {
                 }
             }
         }
+
+        if (root.has-login):VerticalBox {
+            alignment: LayoutAlignment.end;
+
+            HorizontalLayout {
+                alignment: LayoutAlignment.end;
+                Text {
+                    text: "New Balance: ";
+                    vertical-alignment: TextVerticalAlignment.center;
+                }
+
+                LineEdit {
+                    text <=> root.new-balance;
+                    placeholder-text: "New Balance";
+                }
+
+                Button {
+                    text: "Edit";
+                    clicked => {
+                        root.edit-balance(root.customer.id, root.new-balance);
+                    }
+                }
+            }
+
+            HorizontalLayout {
+                alignment: LayoutAlignment.end;
+                Text {
+                    text: "New Credit Level: ";
+                    vertical-alignment: TextVerticalAlignment.center;
+                }
+
+                new-level := ComboBox {
+                    model: ["1", "2", "3", "4", "5"];
+                }
+
+                Button {
+                    text: "Edit";
+                    clicked => {
+                        root.edit-credit(root.customer.id, new-level.current-index + 1);
+                    }
+                }
+            }
+        }
     }
 }
 
@@ -88,12 +130,15 @@ export component CustomerSearchView inherits Window {
     in property <length> item-width: 300px;
     in property <length> window-width: 800px;
     in property <length> window-height: 600px;
+    in property <bool> has-login;
 
     in-out property <int> search-mode: 0;
     in-out property <string> search-text;
 
     callback open-customer-detail(int);
     callback get-search-customer-list(string, int);
+    callback edit-credit(int, int);
+    callback edit-balance(int, string);
 
     VerticalBox {
         alignment: LayoutAlignment.start;
@@ -116,7 +161,7 @@ export component CustomerSearchView inherits Window {
                 ComboBox {
                     current-index <=> root.search-mode;
                     width: 100px;
-                    model: ["realName", "accountName"];
+                    model: ["Username", "Name"];
                 }
             }
 
@@ -134,6 +179,15 @@ export component CustomerSearchView inherits Window {
             for customer in root.customersSearched: CustomerSearchItem {
                 customer: customer;
                 item-width: root.item-width;
+                has-login: root.has-login;
+
+                edit-credit(id, credit) => {
+                    root.edit-credit(id, credit);
+                }
+
+                edit-balance(id, balance) => {
+                    root.edit-balance(id, balance);
+                }
 
                 clicked => {
                     root.open-customer-detail(customer.id);

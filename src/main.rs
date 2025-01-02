@@ -69,6 +69,22 @@ fn main() -> Result<(), slint::PlatformError> {
         }
     });
 
+    main_window.on_user_logout({
+        let main_window = main_window.as_weak();
+        let admin_token = admin_token.as_weak();
+        move || {
+            let main_window = main_window.clone();
+            let admin_token = admin_token.clone();
+            slint::spawn_local(async move {
+                let admin_token = admin_token.unwrap();
+                admin_token.clear().await;
+                let main_window = main_window.unwrap();
+                main_window.set_has_login(false);
+            })
+            .unwrap();
+        }
+    });
+
     main_window.on_user_register({
         // let main_window = main_window.as_weak();
         let rt = rt.as_weak();
@@ -2556,6 +2572,390 @@ fn main() -> Result<(), slint::PlatformError> {
         }
     });
 
+    main_window.on_create_purchase_order({
+        let rt = rt.as_weak();
+        let admin_token = admin_token.as_weak();
+        let main_window = main_window.as_weak();
+        move |shortage_id| {
+            let rt = rt.clone();
+            let admin_token = admin_token.clone();
+            let main_window = main_window.clone();
+            slint::spawn_local(async move {
+                let rt = rt.unwrap();
+                let admin_token = admin_token.unwrap();
+                match rt
+                    .spawn(async move {
+                        match admin_token.get().await {
+                            Some(token) => {
+                                match url_post::<
+                                    PurchaseOrderCreateResponse,
+                                    PurchaseOrderCreateRequest,
+                                >(
+                                    "/purchase_order/create",
+                                    PurchaseOrderCreateRequest {
+                                        token: token.token,
+                                        tag: token.tag,
+                                        nonce: token.nonce,
+                                        shortage_id: shortage_id as u32,
+                                    },
+                                )
+                                .await
+                                {
+                                    Ok(response) => Ok(response),
+                                    Err(e) => Err(e),
+                                }
+                            }
+                            None => Err(anyhow::anyhow!("token not found")),
+                        }
+                    })
+                    .await
+                    .unwrap()
+                {
+                    Ok(_) => {
+                        let main_window = main_window.unwrap();
+                        main_window.invoke_get_shortage_order_list();
+                    }
+                    Err(e) => {
+                        log::error!("{}", e.to_string());
+                    }
+                }
+            })
+            .unwrap();
+        }
+    });
+
+    main_window.on_get_purchase_order_list({
+        let rt = rt.as_weak();
+        let admin_token = admin_token.as_weak();
+        let main_window = main_window.as_weak();
+        move || {
+            let rt = rt.clone();
+            let admin_token = admin_token.clone();
+            let main_window = main_window.clone();
+            slint::spawn_local(async move {
+                let rt = rt.unwrap();
+                let admin_token = admin_token.unwrap();
+                match rt
+                    .spawn(async move {
+                        match admin_token.get().await {
+                            Some(token) => {
+                                match url_post::<PurchaseOrderListResponse, PurchaseOrderListRequest>(
+                                    "/purchase_order/list",
+                                    PurchaseOrderListRequest {
+                                        token: token.token,
+                                        tag: token.tag,
+                                        nonce: token.nonce,
+                                    },
+                                )
+                                    .await
+                                {
+                                    Ok(response) => Ok(response),
+                                    Err(e) => Err(e),
+                                }
+                            }
+                            None => Err(anyhow::anyhow!("token not found")),
+                        }
+                    })
+                    .await
+                    .unwrap()
+                {
+                    Ok(order_list) => {
+                        let orders = order_list
+                            .purchase_orders
+                            .into_iter()
+                            .map(|order| PurchaseOrder {
+                                id: order.purchase_order_id as i32,
+                                expected_delivery_date: order.expected_delivery_date.into(),
+                                order_date: order.order_date.into(),
+                                status: order.status.into(),
+                                total_price: order.total_price.into(),
+
+                            })
+                            .collect::<Vec<_>>();
+                        let main_window = main_window.unwrap();
+                        main_window.set_purchase_orders(ModelRc::new(VecModel::from(orders)));
+                    }
+                    Err(e) => {
+                        log::error!("{}", e.to_string());
+                    }
+                }
+            })
+                .unwrap();
+        }
+    });
+
+    main_window.on_open_purchase_order_detail({
+        let rt = rt.as_weak();
+        let admin_token = admin_token.as_weak();
+        move |purchase_order_id| {
+            let rt = rt.clone();
+            let admin_token = admin_token.clone();
+            slint::spawn_local(async move {
+                let rt = rt.unwrap();
+                let admin_token = admin_token.unwrap();
+                match rt
+                    .spawn(async move {
+                        match admin_token.get().await {
+                            Some(token) => {
+                                match url_post::<
+                                    PurchaseOrderDetailResponse,
+                                    PurchaseOrderDetailRequest,
+                                >(
+                                    "/purchase_order/detail",
+                                    PurchaseOrderDetailRequest {
+                                        token: token.token,
+                                        tag: token.tag,
+                                        nonce: token.nonce,
+                                        purchase_order_id: purchase_order_id as u32,
+                                    },
+                                )
+                                .await
+                                {
+                                    Ok(response) => Ok(response),
+                                    Err(e) => Err(e),
+                                }
+                            }
+                            None => Err(anyhow::anyhow!("token not found")),
+                        }
+                    })
+                    .await
+                    .unwrap()
+                {
+                    Ok(purchase_order_detail) => {
+                        let books = purchase_order_detail
+                            .items
+                            .into_iter()
+                            .map(|book| BookInPurchaseOrder {
+                                book_id: book.book_id as i32,
+                                isbn: book.isbn.into(),
+                                supplier: book.supplier_name.into(),
+                                publisher: book.publisher_name.into(),
+                                quantity: book.quantity as i32,
+                                total_price: book.total_price.into(),
+                            })
+                            .collect::<Vec<_>>();
+                        let purchase_order = PurchaseOrderDetail {
+                            id: purchase_order_id,
+                            expected_delivery_date: purchase_order_detail
+                                .expected_delivery_date
+                                .into(),
+                            order_date: purchase_order_detail.order_date.into(),
+                            status: purchase_order_detail.status.into(),
+                            total_price: purchase_order_detail.total_price.into(),
+                            books: ModelRc::new(VecModel::from(books)),
+                        };
+                        let purchase_order_detail_window =
+                            PurchaseOrderDetailWindow::new().unwrap();
+                        purchase_order_detail_window.set_purchase_order_detail(purchase_order);
+                        purchase_order_detail_window.show().unwrap();
+                    }
+                    Err(e) => {
+                        log::error!("{}", e.to_string());
+                    }
+                }
+            })
+            .unwrap();
+        }
+    });
+
+    main_window.on_get_search_book_list({
+        let rt = rt.as_weak();
+        let main_window = main_window.as_weak();
+        move |search_text, mode| {
+            let rt = rt.clone();
+            let main_window = main_window.clone();
+            slint::spawn_local(async move {
+                let rt = rt.unwrap();
+                match rt
+                    .spawn(async move {
+                        match mode {
+                            0 => match url_post::<BookTitleSearchResponse, BookTitleSearchRequest>(
+                                "book/search/title",
+                                BookTitleSearchRequest {
+                                    title: search_text.to_string(),
+                                },
+                            )
+                                .await
+                            {
+                                Ok(book_list) => {
+                                    let mut book_cover_buffers =
+                                        Vec::with_capacity(book_list.books.len());
+
+                                    for book in book_list.books.iter() {
+                                        book_cover_buffers
+                                            .push(url_get_image_buffer(&book.cover).await.ok());
+                                    }
+                                    Ok((book_list, book_cover_buffers))
+                                }
+                                Err(e) => Err(e),
+                            },
+                            1 => match url_post::<BookAuthorsSearchResponse, BookAuthorsSearchRequest>(
+                                "book/search/authors",
+                                BookAuthorsSearchRequest {
+                                    authors: search_text.to_string(),
+                                },
+                            )
+                                .await
+                            {
+                                Ok(book_list) => {
+                                    let mut book_cover_buffers =
+                                        Vec::with_capacity(book_list.books.len());
+
+                                    for book in book_list.books.iter() {
+                                        book_cover_buffers
+                                            .push(url_get_image_buffer(&book.cover).await.ok());
+                                    }
+                                    Ok((book_list.into(), book_cover_buffers))
+                                }
+                                Err(e) => Err(e),
+                            },
+                            2 => {
+                                match url_post::<
+                                    BookKeywordsSearchResponse,
+                                    BookKeywordsSearchRequest,
+                                >(
+                                    "book/search/keywords",
+                                    BookKeywordsSearchRequest {
+                                        keywords: search_text.trim().to_string(),
+                                    },
+                                )
+                                    .await
+                                {
+                                    Ok(book_list) => {
+                                        let mut book_cover_buffers =
+                                            Vec::with_capacity(book_list.books.len());
+
+                                        for book in book_list.books.iter() {
+                                            book_cover_buffers
+                                                .push(url_get_image_buffer(&book.cover).await.ok());
+                                        }
+                                        Ok((book_list.into(), book_cover_buffers))
+                                    }
+                                    Err(e) => Err(e),
+                                }
+                            }
+                            _ => unreachable!("mode out of range"),
+                        }
+                    })
+                    .await
+                    .unwrap()
+                {
+                    Ok((search_items, cover)) => {
+                        let books = search_items
+                            .books
+                            .into_iter()
+                            .zip(cover.into_iter())
+                            .map(|(book, cover)| {
+                                let book_id = book.book_id as i32;
+                                let title = book.title.into();
+                                let isbn = book.isbn.into();
+                                let authors = ModelRc::new(VecModel::from(
+                                    book.authors
+                                        .into_iter()
+                                        .map(|author| author.name.into())
+                                        .collect::<Vec<_>>(),
+                                ));
+                                let publisher = book.publisher.name.into();
+                                let price = book.price.into();
+                                let keywords = ModelRc::new(VecModel::from(
+                                    book.keywords
+                                        .into_iter()
+                                        .map(|keyword| keyword.keyword.into())
+                                        .collect::<Vec<_>>(),
+                                ));
+                                let cover = match cover {
+                                    Some(buffer) => Image::from_rgba8(buffer),
+                                    None => Image::default(),
+                                };
+                                BookInSearch {
+                                    id: book_id,
+                                    title,
+                                    isbn,
+                                    authors,
+                                    publisher,
+                                    price,
+                                    keywords,
+                                    cover,
+                                }
+                            })
+                            .collect::<Vec<_>>();
+                        let main_window = main_window.unwrap();
+                        main_window.set_books_in_search(ModelRc::new(VecModel::from(books)));
+                    }
+                    Err(e) => {
+                        log::error!("{}", e.to_string());
+                    }
+                }
+            })
+                .unwrap();
+        }
+    });
+
+    main_window.on_get_search_customer_list({
+        let admin_token = admin_token.as_weak();
+        let rt = rt.as_weak();
+        let main_window = main_window.as_weak();
+        move |search_text, mode| {
+            let admin_token = admin_token.clone();
+            let rt = rt.clone();
+            let main_window = main_window.clone();
+            slint::spawn_local(async move {
+                let admin_token = admin_token.unwrap();
+                let rt = rt.unwrap();
+                let main_window = main_window.unwrap();
+                match rt
+                    .spawn(async move {
+                        match admin_token.get().await {
+                            Some(token) => match url_post::<UserSearchResponse, UserSearchRequest>(
+                                "/admin/customer/search",
+                                UserSearchRequest {
+                                    token: token.token,
+                                    tag: token.tag,
+                                    nonce: token.nonce,
+                                    search: search_text.to_string(),
+                                    mode: match mode {
+                                        0 => "username".into(),
+                                        1 => "name".into(),
+                                        _ => "none".into(),
+                                    },
+                                },
+                            )
+                            .await
+                            {
+                                Ok(response) => Ok(response),
+                                Err(e) => Err(e),
+                            },
+                            None => Err(anyhow::anyhow!("token not found")),
+                        }
+                    })
+                    .await
+                    .unwrap()
+                {
+                    Ok(customer_list) => {
+                        let customers = customer_list
+                            .users
+                            .into_iter()
+                            .map(|customer| CustomerInSearch {
+                                account_banlance: customer.balance.into(),
+                                id: customer.user_id as i32,
+                                realname: customer.name.into(),
+                                email: customer.email.into(),
+                                address: customer.address.into(),
+                                credit_level: customer.credit_level as i32,
+                                username: customer.username.into(),
+                            })
+                            .collect::<Vec<_>>();
+                        main_window
+                            .set_customers_in_search(ModelRc::new(VecModel::from(customers)));
+                    }
+                    Err(e) => {
+                        log::error!("{}", e.to_string());
+                    }
+                }
+            })
+            .unwrap();
+        }
+    });
     main_window.show()?;
 
     slint::run_event_loop()?;

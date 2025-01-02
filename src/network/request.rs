@@ -176,3 +176,50 @@ pub struct ShortageCreateRequest {
     pub tag: String,
     pub nonce: String,
 }
+
+#[derive(Serialize, Debug, Default)]
+pub struct PurchaseOrderCreateRequest {
+    pub token: String,
+    pub tag: String,
+    pub nonce: String,
+    pub shortage_id: u32,
+}
+
+#[derive(Serialize, Debug, Default)]
+pub struct PurchaseOrderListRequest {
+    pub token: String,
+    pub tag: String,
+    pub nonce: String,
+}
+
+#[derive(Serialize, Debug, Default)]
+pub struct PurchaseOrderDetailRequest {
+    pub token: String,
+    pub tag: String,
+    pub nonce: String,
+    pub purchase_order_id: u32,
+}
+
+#[derive(Serialize, Debug, Default)]
+pub struct BookTitleSearchRequest {
+    pub title: String,
+}
+
+#[derive(Serialize, Debug, Default)]
+pub struct BookKeywordsSearchRequest {
+    pub keywords: String,
+}
+
+#[derive(Serialize, Debug, Default)]
+pub struct BookAuthorsSearchRequest {
+    pub authors: String,
+}
+
+#[derive(Serialize, Debug, Default)]
+pub struct UserSearchRequest {
+    pub token: String,
+    pub tag: String,
+    pub nonce: String,
+    pub search: String,
+    pub mode: String,
+}

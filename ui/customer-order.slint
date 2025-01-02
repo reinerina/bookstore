@@ -55,7 +55,7 @@ component singleOrderView inherits Rectangle {
 
                 HorizontalBox {
                     alignment: LayoutAlignment.start;
-                    VerticalLayout {
+                    VerticalBox {
                         alignment: LayoutAlignment.start;
                         Text {
                             text: "Order ID: " + root.order.id;
@@ -70,7 +70,7 @@ component singleOrderView inherits Rectangle {
                         }
                     }
 
-                    VerticalLayout {
+                    VerticalBox {
                         alignment: LayoutAlignment.start;
                         Text {
                             text: "Total Price: " + root.order.total_price;
@@ -96,7 +96,7 @@ component singleOrderView inherits Rectangle {
 
                 VerticalBox {
                     alignment: LayoutAlignment.start;
-                    for item[index] in root.order.items: VerticalLayout {
+                    for item[index] in root.order.items: VerticalBox {
                         width: root.item-width;
                         Text {
                             text: "Book id: " + root.order.items[index].id;

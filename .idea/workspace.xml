@@ -8,7 +8,11 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="bcc51eec-e2ce-4f0c-abff-3a4fd38038f5" name="更改" comment="">
-      <change beforePath="$PROJECT_DIR$/ui/admin-cart.slint" beforeDir="false" afterPath="$PROJECT_DIR$/ui/admin-cart.slint" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/main.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/network/request.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/network/request.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/network/response.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/network/response.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ui/app-window.slint" beforeDir="false" afterPath="$PROJECT_DIR$/ui/app-window.slint" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -120,7 +124,8 @@
       <workItem from="1735281071423" duration="797000" />
       <workItem from="1735281888997" duration="52000" />
       <workItem from="1735281944772" duration="14025000" />
-      <workItem from="1735297342187" duration="5051000" />
+      <workItem from="1735297342187" duration="9810000" />
+      <workItem from="1735708551150" duration="4655000" />
     </task>
     <task id="LOCAL-00001" summary="feat: add some function">
       <option name="closed" value="true" />
@@ -138,7 +143,15 @@
       <option name="project" value="LOCAL" />
       <updated>1735220041210</updated>
     </task>
-    <option name="localTasksCounter" value="3" />
+    <task id="LOCAL-00003" summary="feat: book shortage">
+      <option name="closed" value="true" />
+      <created>1735304360723</created>
+      <option name="number" value="00003" />
+      <option name="presentableId" value="LOCAL-00003" />
+      <option name="project" value="LOCAL" />
+      <updated>1735304360723</updated>
+    </task>
+    <option name="localTasksCounter" value="4" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -147,7 +160,8 @@
   <component name="VcsManagerConfiguration">
     <MESSAGE value="feat: add some function" />
     <MESSAGE value="feat: ship order to customer" />
-    <option name="LAST_COMMIT_MESSAGE" value="feat: ship order to customer" />
+    <MESSAGE value="feat: book shortage" />
+    <option name="LAST_COMMIT_MESSAGE" value="feat: book shortage" />
   </component>
   <component name="XSLT-Support.FileAssociations.UIState">
     <expand />

@@ -16,6 +16,8 @@ import { BookInEdit, AuthorInEdit, SupplierInEdit, SeriesInEdit, BookEditView } 
 import { BookInAdd, AuthorInAdd, SupplierInAdd, SeriesInAdd, BookAddView } from "add-book.slint";
 import { ShortageHistory, ShortageOrder } from "book-shortage.slint";
 import { ShortageDetailView, ShortageDetail, BookInShortage } from "shortage-detail.slint";
+import { PurchaseOrderHistoryView, PurchaseOrder } from "purchase-order-history.slint";
+import { PurchaseOrderDetailView, PurchaseOrderDetail, BookInPurchaseOrder } from "purchase-order-detail.slint";
 
 export component MainWindow inherits Window {
 
@@ -34,6 +36,7 @@ export component MainWindow inherits Window {
 
     in property <[OrderHistory]> orders;
     in property <[ShortageOrder]> shortage-orders;
+    in property <[PurchaseOrder]> purchase-orders;
 
     in property <[CustomerInDetail]> customers;   //customer-view.slint中的顾客信息结构
     in property <[CustomerOrder]> customer-orders; //customer-order.slint中的顾客订单结构
@@ -47,8 +50,10 @@ export component MainWindow inherits Window {
     property <string> password;
 
     in property <[CustomerInSearch]> customers-in-search;
-    property <string> search-text;
-    property <int> search-mode: 0;
+    property <string> book-search-text;
+    property <string> customer-search-text;
+    property <int> book-search-mode: 0;
+    property <int> customer-search-mode: 0;
 
     callback user-login(string, string);
     callback user-register();
@@ -66,8 +71,9 @@ export component MainWindow inherits Window {
     callback get-shortage-order-list();
     callback view-order(string);
     callback delete-order(string);
-    callback create-purchase-order(string);
+    callback create-purchase-order(int);
     callback add-shortage(int);
+    callback open-purchase-order-detail(int);
 
     callback get-cart-book-list();
     callback update-cart-book(int, int, [BookInCart]);
@@ -83,6 +89,7 @@ export component MainWindow inherits Window {
     callback get-customer-orders-list();
     callback delete-customer-order(string);
     callback send-goods(int);
+    callback get-purchase-order-list();
 
     callback open-supplier-detail(int); //id是int变量
 
@@ -111,7 +118,7 @@ export component MainWindow inherits Window {
                 @tr("Menu" => "Purchase Order"),
                 @tr("Menu" => "Customer Profiles"),
                 @tr("Menu" => "Customer orders"),
-                @tr("Menu" => "Supplier Profiles"),
+                // @tr("Menu" => "Supplier Profiles"),
                 @tr("Menu" => "Search Book"),
                 @tr("Menu" => "Search Customer"),
                 @tr("Menu" => "About")
@@ -283,7 +290,22 @@ export component MainWindow inherits Window {
                         root.open-shortage-detail(id);
                     }
                 }
-                
+                if (side-bar.current-item == 4):purchase-order-history-view := PurchaseOrderHistoryView {
+
+                    init => {
+                        root.get-purchase-order-list();
+                    }
+
+                    preferred-width: root.width;
+                    preferred-height: root.height;
+                    orders: root.purchase-orders;
+                    window-width: root.width;
+                    window-height: root.height;
+                    item-width: root.width - side-bar.width - 50px;
+                    open-purchase-order-detail(id) => {
+                        root.open-purchase-order-detail(id);
+                    }
+                }
             
 
                 // if (side-bar.current-item == 4):order-history-view := OrderHistoryView {
@@ -342,23 +364,23 @@ export component MainWindow inherits Window {
                     }
                 }
 
-                if (side-bar.current-item == 7):supplier-view := supplierView {
+                // if (side-bar.current-item == 7):supplier-view := supplierView {
 
-                    init => {
-                        root.get-supplier-list();
-                    }
+                //     init => {
+                //         root.get-supplier-list();
+                //     }
 
-                    preferred-width: root.width;
-                    preferred-height: root.height;
-                    window-width: root.width - side-bar.width - 50px;
-                    window-height: root.height;
-                    item-width: root.width - side-bar.width - 50px;
-                    open-supplier-detail(id) => {
-                        root.open-supplier-detail(id);
-                    }
-                }
+                //     preferred-width: root.width;
+                //     preferred-height: root.height;
+                //     window-width: root.width - side-bar.width - 50px;
+                //     window-height: root.height;
+                //     item-width: root.width - side-bar.width - 50px;
+                //     open-supplier-detail(id) => {
+                //         root.open-supplier-detail(id);
+                //     }
+                // }
 
-                if (side-bar.current-item == 8):book-search-view := BookSearchView {
+                if (side-bar.current-item == 7):book-search-view := BookSearchView {
 
                     preferred-width: root.width;
                     preferred-height: root.height;
@@ -369,8 +391,8 @@ export component MainWindow inherits Window {
                     window-height: root.height;
                     window-width: root.width;
 
-                    search-text <=> root.search-text;
-                    search-mode <=> root.search-mode;
+                    search-text <=> root.book-search-text;
+                    search-mode <=> root.book-search-mode;
 
                     open-book-detail(id) => {
                         root.open-book-detail(id);
@@ -381,7 +403,7 @@ export component MainWindow inherits Window {
                     }
                 }
 
-                if (side-bar.current-item == 9):customer-search-view := CustomerSearchView {
+                if (side-bar.current-item == 8):customer-search-view := CustomerSearchView {
 
                     preferred-width: root.width;
                     preferred-height: root.height;
@@ -390,8 +412,9 @@ export component MainWindow inherits Window {
                     window-height: root.height;
                     window-width: root.width;
 
-                    search-text <=> root.search-text;
-                    search-mode <=> root.search-mode;
+                    search-text <=> root.customer-search-text;
+                    search-mode <=> root.customer-search-mode;
+                    has-login: root.has-login;
 
                     open-customer-detail(id) => {
                         root.open-customer-detail(id);
@@ -399,6 +422,14 @@ export component MainWindow inherits Window {
 
                     get-search-customer-list(keyword, mode) => {
                         root.get-search-customer-list(keyword, mode);
+                    }
+
+                    edit-credit(id, credit) => {
+                        root.edit-credit(id, credit);
+                    }
+
+                    edit-balance(id, balance) => {
+                        root.edit-balance(id, balance);
                     }
                 }
             }
@@ -777,8 +808,8 @@ export component BookAddWindow inherits Window {
 
 export component ShortageDetailWindow inherits Window {
     in property <ShortageDetail> shortage-detail;
-    in property <length> item-width: 200px;
-    in property <length> window-width: 200px;
+    in property <length> item-width: 300px;
+    in property <length> window-width: 300px;
     in property <length> window-height: 300px;
 
     callback view-order(string);
@@ -794,9 +825,34 @@ export component ShortageDetailWindow inherits Window {
 
     shortage-detail-view := ShortageDetailView {
         shortage-detail: shortage-detail;
-        item-width: root.item-width;
-        window-width: root.window-width;
-        window-height: root.window-height;
+        item-width: root.width - 50px;
+        window-width: root.width;
+        window-height: root.height;
+        preferred-width: root.width;
+        preferred-height: root.height;
+    }
+}
+
+export component PurchaseOrderDetailWindow inherits Window {
+    in property <PurchaseOrderDetail> purchase-order-detail;
+    in property <length> item-width: 600px;
+    in property <length> window-width: 600px;
+    in property <length> window-height: 300px;
+
+    callback send-goods(int);
+
+    title: "Purchase Order Detail";
+    preferred-width: root.window-width;
+    preferred-height: root.window-height;
+
+    min-width: root.window-width;
+    min-height: root.window-height;
+
+    purchase-order-detail-view := PurchaseOrderDetailView {
+        purchase-order-detail: purchase-order-detail;
+        item-width: root.width - 50px;
+        window-width: root.width;
+        window-height: root.height;
         preferred-width: root.width;
         preferred-height: root.height;
     }
