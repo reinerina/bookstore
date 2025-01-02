@@ -139,3 +139,42 @@ pub async fn purchase_order_detail(
         Err(e) => HttpResponse::BadGateway().json(e.to_string()),
     }
 }
+
+#[derive(Debug, Deserialize)]
+struct PurchaseOrderCreateRequest {
+    token: String,
+    tag: String,
+    nonce: String,
+    shortage_id: u32,
+}
+
+#[derive(Debug, Serialize)]
+struct PurchaseOrderCreateResponse {
+    purchase_order_id: u32,
+}
+
+#[post("/purchase_order/create")]
+pub async fn purchase_order_create(
+    pool: web::Data<Pool>,
+    purchase_order_create_request: web::Json<PurchaseOrderCreateRequest>,
+) -> impl Responder {
+    let request = purchase_order_create_request.into_inner();
+    let token = &Token {
+        token: request.token,
+        tag: request.tag,
+        nonce: request.nonce,
+    };
+    match pool.get_conn().await {
+        Ok(mut conn) => {
+            match PurchaseOrderService::create_purchase_order(&mut conn, token, request.shortage_id)
+                .await
+            {
+                Ok(purchase_order_id) => {
+                    HttpResponse::Ok().json(PurchaseOrderCreateResponse { purchase_order_id })
+                }
+                Err(e) => HttpResponse::BadRequest().json(e.to_string()),
+            }
+        }
+        Err(e) => HttpResponse::BadGateway().json(e.to_string()),
+    }
+}

@@ -400,6 +400,44 @@ pub async fn admin_stock_transfer(
 }
 
 #[derive(Debug, Deserialize)]
+struct StockAutoRequest {
+    token: String,
+    tag: String,
+    nonce: String,
+    book_id: u32,
+    location_id: u32,
+}
+
+#[derive(Debug, Serialize)]
+struct StockAutoResponse {
+    message: String,
+}
+
+#[post("/admin/stock/add")]
+pub async fn admin_stock_add(
+    pool: web::Data<Pool>,
+    stock_auto_request: web::Json<StockAutoRequest>,
+) -> impl Responder {
+    let request = stock_auto_request.into_inner();
+    let token = &Token {
+        token: request.token,
+        tag: request.tag,
+        nonce: request.nonce,
+    };
+    let book_id = request.book_id;
+    let location_id = request.location_id;
+
+    let mut conn = pool.get_conn().await.unwrap();
+
+    match StockService::change_stock(&mut conn, token, book_id, location_id, 0).await {
+        Ok(_) => HttpResponse::Ok().json(StockAutoResponse {
+            message: "stock add automatically successfully".to_string(),
+        }),
+        Err(e) => HttpResponse::BadRequest().json(e.to_string()),
+    }
+}
+
+#[derive(Debug, Deserialize)]
 struct BookUpdateRequest {
     token: String,
     tag: String,
@@ -788,6 +826,168 @@ pub async fn admin_order_ship_auto(
     match AdminService::ship_order_auto(&mut conn, token, order_id).await {
         Ok(_) => HttpResponse::Ok().json(ShipOrderAutoResponse {
             message: "order ship automatically successfully".to_string(),
+        }),
+        Err(e) => HttpResponse::BadRequest().json(e.to_string()),
+    }
+}
+
+#[derive(Debug, Deserialize)]
+struct ShortageListRequest {
+    token: String,
+    tag: String,
+    nonce: String,
+}
+
+#[derive(Debug, Serialize)]
+struct ShortageListItemResponse {
+    shortage_id: u32,
+    registration_date: String,
+    is_resolved: bool,
+}
+
+#[derive(Debug, Serialize)]
+struct ShortageListResponse {
+    shortages: Vec<ShortageListItemResponse>,
+}
+
+#[post("/admin/shortage/list")]
+pub async fn admin_shortage_list(
+    pool: web::Data<Pool>,
+    shortage_list_request: web::Json<ShortageListRequest>,
+) -> impl Responder {
+    let request = shortage_list_request.into_inner();
+    let token = &Token {
+        token: request.token,
+        tag: request.tag,
+        nonce: request.nonce,
+    };
+
+    let mut conn = pool.get_conn().await.unwrap();
+
+    match AdminService::get_shortage_list(&mut conn, token).await {
+        Ok(shortages) => HttpResponse::Ok().json(ShortageListResponse {
+            shortages: shortages
+                .into_iter()
+                .map(|shortage| ShortageListItemResponse {
+                    shortage_id: shortage.id,
+                    registration_date: shortage.registration_date.to_string(),
+                    is_resolved: shortage.is_resolved,
+                })
+                .collect(),
+        }),
+        Err(e) => HttpResponse::BadRequest().json(e.to_string()),
+    }
+}
+
+#[derive(Debug, Deserialize)]
+struct ShortageDetailRequest {
+    token: String,
+    tag: String,
+    nonce: String,
+    shortage_id: u32,
+}
+
+#[derive(Debug, Serialize)]
+struct ShortageDetailResponse {
+    shortage_id: u32,
+    registration_date: String,
+    is_resolved: bool,
+    items: Vec<(u32, u32, u32, u32, u32)>,
+}
+
+#[post("/admin/shortage/detail")]
+pub async fn admin_shortage_detail(
+    pool: web::Data<Pool>,
+    shortage_detail_request: web::Json<ShortageDetailRequest>,
+) -> impl Responder {
+    let request = shortage_detail_request.into_inner();
+    let token = &Token {
+        token: request.token,
+        tag: request.tag,
+        nonce: request.nonce,
+    };
+    let shortage_id = request.shortage_id;
+
+    let mut conn = pool.get_conn().await.unwrap();
+
+    match AdminService::get_shortage_detail(&mut conn, token, shortage_id).await {
+        Ok(shortage) => HttpResponse::Ok().json(ShortageDetailResponse {
+            shortage_id: shortage.id,
+            registration_date: shortage.registration_date.to_string(),
+            is_resolved: shortage.is_resolved,
+            items: shortage
+                .items
+                .into_iter()
+                .map(|item| {
+                    (
+                        item.id,
+                        item.book_id,
+                        item.supplier_id,
+                        item.shortage,
+                        item.shortage_id,
+                    )
+                })
+                .collect(),
+        }),
+        Err(e) => HttpResponse::BadRequest().json(e.to_string()),
+    }
+}
+
+#[derive(Debug, Deserialize)]
+struct UserSearchRequest {
+    token: String,
+    tag: String,
+    nonce: String,
+    search: String,
+    mode: String,
+}
+
+#[derive(Debug, Serialize)]
+struct UserSearchItemResponse {
+    user_id: u32,
+    username: String,
+    name: String,
+    email: String,
+    address: String,
+    balance: String,
+    credit_level: u32,
+}
+
+#[derive(Debug, Serialize)]
+struct UserSearchResponse {
+    users: Vec<UserSearchItemResponse>,
+}
+
+#[post("/admin/customer/search")]
+pub async fn admin_user_search(
+    pool: web::Data<Pool>,
+    user_search_request: web::Json<UserSearchRequest>,
+) -> impl Responder {
+    let request = user_search_request.into_inner();
+    let token = &Token {
+        token: request.token,
+        tag: request.tag,
+        nonce: request.nonce,
+    };
+    let search = &request.search;
+    let mode = &request.mode;
+
+    let mut conn = pool.get_conn().await.unwrap();
+
+    match AdminService::search_user(&mut conn, token, search, mode).await {
+        Ok(users) => HttpResponse::Ok().json(UserSearchResponse {
+            users: users
+                .into_iter()
+                .map(|user| UserSearchItemResponse {
+                    user_id: user.id,
+                    username: user.username,
+                    name: user.name,
+                    email: user.email,
+                    address: user.address,
+                    balance: user.account_balance.to_string(),
+                    credit_level: user.credit_level,
+                })
+                .collect(),
         }),
         Err(e) => HttpResponse::BadRequest().json(e.to_string()),
     }

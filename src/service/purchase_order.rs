@@ -1,5 +1,5 @@
 use crate::entity::{AdminRole, PurchaseOrder, PurchaseOrderStatus, SupplierCatalog};
-use crate::repo::{PurchaseOrderRepo, StockRepo};
+use crate::repo::{PurchaseOrderRepo, StockRepo, UtilsRepo};
 use crate::service::AdminService;
 use crate::utils::Token;
 use mysql_async::Conn;
@@ -113,9 +113,16 @@ impl PurchaseOrderService {
     ) -> anyhow::Result<u32> {
         match AdminService::verify_admin(conn, token, AdminRole::Staff).await? {
             (_, _, true) => {
+                UtilsRepo::transaction(conn).await?;
                 match PurchaseOrderRepo::create_purchase_order(conn, shortage_id).await? {
-                    Some(purchase_order_id) => Ok(purchase_order_id),
-                    None => anyhow::bail!("create purchase order failed"),
+                    Some(purchase_order_id) => {
+                        UtilsRepo::commit(conn).await?;
+                        Ok(purchase_order_id)
+                    }
+                    None => {
+                        UtilsRepo::rollback(conn).await?;
+                        anyhow::bail!("create purchase order failed")
+                    }
                 }
             }
             (_, _, false) => {

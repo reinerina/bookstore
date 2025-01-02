@@ -76,7 +76,7 @@ GROUP BY
                 |(shortage_id, registration_date, is_resolved, items)| Shortage {
                     id: shortage_id,
                     registration_date,
-                    item: {
+                    items: {
                         let items: Option<String> = items;
                         match items {
                             Some(items) => items

@@ -341,20 +341,49 @@ WHERE order_items.order_id = :order_id;";
         order_id: u32,
         status: OrderPaymentStatus,
     ) -> anyhow::Result<()> {
+        let query = r"SELECT payment_status FROM orders WHERE order_id = :order_id;";
+        let params = params! {
+            "order_id" => order_id,
+        };
+        let payment_status = query
+            .with(params)
+            .first::<String, &mut Conn>(&mut *conn)
+            .await?
+            .unwrap_or_default();
+
         let query = r"UPDATE orders SET payment_status = :status WHERE order_id = :order_id;";
         let params = params! {
             "status" => status.to_string(),
             "order_id" => order_id,
         };
-
         query.with(params).run(&mut *conn).await?;
-
         match status {
             OrderPaymentStatus::Paid => {
+                if payment_status == OrderPaymentStatus::Paid.to_string() {
+                    anyhow::bail!("payment already completed");
+                }
+
+                let query = r"SET @total_purchase = (
+	SELECT
+		SUM( books.price * order_items.quantity * ( 100 - credit_rules.discount_percentage ) * 0.01 )
+	FROM
+		order_items
+		LEFT JOIN books ON books.book_id = order_items.book_id
+		LEFT JOIN orders ON orders.order_id = order_items.order_id
+		LEFT JOIN customers ON customers.customer_id = orders.customer_id
+		LEFT JOIN credit_rules ON credit_rules.credit_level = customers.credit_level
+	WHERE
+		order_items.order_id = :order_id
+);";
+                let params = params! {
+                    "order_id" => order_id,
+                };
+                query.with(params).run(&mut *conn).await?;
+
                 let query = r"UPDATE customers
-SET total_purchase = total_purchase + ( SELECT SUM( books.price * order_items.quantity ) FROM order_items LEFT JOIN books ON books.book_id = order_items.book_id WHERE order_items.order_id = :order_id )
-WHERE
-	customers.customer_id = ( SELECT customer_id FROM orders WHERE order_id = :order_id );";
+SET total_purchase = total_purchase + @total_purchase,
+    account_balance = account_balance - @total_purchase
+WHERE customers.customer_id = ( SELECT customer_id FROM orders WHERE order_id = :order_id );";
                 let params = params! {
                     "order_id" => order_id,
                 };

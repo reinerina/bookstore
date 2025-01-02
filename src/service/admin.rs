@@ -1,5 +1,5 @@
-use crate::entity::{Admin, AdminRole, Book, Customer, Location, Order};
-use crate::repo::{AdminRepo, BookRepo, OrderRepo, StockRepo, UserRepo, UtilsRepo};
+use crate::entity::{Admin, AdminRole, Book, Customer, Location, Order, Shortage};
+use crate::repo::{AdminRepo, BookRepo, OrderRepo, ShortageRepo, StockRepo, UserRepo, UtilsRepo};
 use crate::utils::{encrypt_admin_password, generate_token, validate_token, Token};
 use mysql_async::Conn;
 use mysql_common::bigdecimal::BigDecimal;
@@ -219,6 +219,78 @@ impl AdminService {
             }
             (_, _, false) => {
                 anyhow::bail!("permission denied: only staff or admin can ship order")
+            }
+        }
+    }
+
+    pub async fn get_shortage_list(
+        conn: &mut Conn,
+        token: &Token,
+    ) -> anyhow::Result<Vec<Shortage>> {
+        match AdminService::verify_admin(conn, token, AdminRole::Staff).await? {
+            (_, _, true) => ShortageRepo::get_shortage_list(conn).await,
+            (_, _, false) => {
+                anyhow::bail!("permission denied: only staff or admin can get shortage list")
+            }
+        }
+    }
+
+    pub async fn get_shortage_detail(
+        conn: &mut Conn,
+        token: &Token,
+        shortage_id: u32,
+    ) -> anyhow::Result<Shortage> {
+        match AdminService::verify_admin(conn, token, AdminRole::Staff).await? {
+            (_, _, true) => match ShortageRepo::get_shortage_detail(conn, shortage_id).await? {
+                Some(shortage) => Ok(shortage),
+                None => anyhow::bail!("shortage {} not found", shortage_id),
+            },
+            (_, _, false) => {
+                anyhow::bail!("permission denied: only staff or admin can get shortage detail")
+            }
+        }
+    }
+
+    pub async fn search_user(
+        conn: &mut Conn,
+        token: &Token,
+        search: &str,
+        mode: &str,
+    ) -> anyhow::Result<Vec<Customer>> {
+        match AdminService::verify_admin(conn, token, AdminRole::Staff).await? {
+            (_, _, true) => match mode {
+                "username" => UserRepo::search_user_by_username_natural(conn, search).await,
+                "name" => UserRepo::search_user_by_name_natural(conn, search).await,
+                _ => anyhow::bail!("invalid search mode"),
+            },
+            (_, _, false) => {
+                anyhow::bail!("permission denied: only staff or admin can search user")
+            }
+        }
+    }
+
+    pub async fn search_user_by_username(
+        conn: &mut Conn,
+        token: &Token,
+        username: &str,
+    ) -> anyhow::Result<Vec<Customer>> {
+        match AdminService::verify_admin(conn, token, AdminRole::Staff).await? {
+            (_, _, true) => UserRepo::search_user_by_username_natural(conn, username).await,
+            (_, _, false) => {
+                anyhow::bail!("permission denied: only staff or admin can search user by username")
+            }
+        }
+    }
+
+    pub async fn search_user_by_name(
+        conn: &mut Conn,
+        token: &Token,
+        name: &str,
+    ) -> anyhow::Result<Vec<Customer>> {
+        match AdminService::verify_admin(conn, token, AdminRole::Staff).await? {
+            (_, _, true) => UserRepo::search_user_by_name_natural(conn, name).await,
+            (_, _, false) => {
+                anyhow::bail!("permission denied: only staff or admin can search user by name")
             }
         }
     }

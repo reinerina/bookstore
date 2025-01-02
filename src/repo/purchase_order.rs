@@ -34,7 +34,17 @@ impl PurchaseOrderRepo {
         conn: &mut Conn,
         shortage_id: u32,
     ) -> anyhow::Result<Option<u32>> {
+        let query = r"SELECT is_resolved FROM shortages WHERE shortage_id = :shortage_id";
+        let params = params! {
+            "shortage_id" => shortage_id,
+        };
+        let is_resolved = query.with(params).first::<bool, &mut Conn>(conn).await?;
+        if is_resolved == Some(true) {
+            anyhow::bail!("shortage is already resolved");
+        }
         let query = r"INSERT INTO purchase_orders (order_date, expected_delivery_date) VALUES (NOW(), NOW() + INTERVAL 7 DAY)";
+        query.with(()).run(&mut *conn).await?;
+        let query = r"SELECT LAST_INSERT_ID() as purchase_order_id";
         match query.with(()).first::<u32, &mut Conn>(conn).await? {
             Some(purchase_order_id) => {
                 let query = r"SELECT shortage_item_id, shortage_id, book_id, supplier_id, shortage FROM book_shortages
@@ -85,6 +95,12 @@ impl PurchaseOrderRepo {
                         None => anyhow::bail!("failed to find supplier catalog"),
                     }
                 }
+                let query =
+                    r"UPDATE shortages SET is_resolved = 1 WHERE shortage_id = :shortage_id";
+                let params = params! {
+                    "shortage_id" => shortage_id,
+                };
+                query.with(params).run(&mut *conn).await?;
                 Ok(Some(purchase_order_id))
             }
             None => anyhow::bail!("failed to create purchase order"),
@@ -97,7 +113,7 @@ impl PurchaseOrderRepo {
 	purchase_orders.order_date,
 	purchase_orders.expected_delivery_date,
 	purchase_orders.`status`,
-	SUM( supplier_catalogs.price * purchase_order_items.quantity ) AS total_amount
+	IFNULL( SUM( supplier_catalogs.price * purchase_order_items.quantity ) , 0 ) AS total_amount
 FROM
 	purchase_orders
 	LEFT JOIN purchase_order_items ON purchase_orders.purchase_order_id = purchase_order_items.purchase_order_id
@@ -135,11 +151,11 @@ GROUP BY
 	purchase_orders.order_date,
 	purchase_orders.expected_delivery_date,
 	purchase_orders.`status`,
-	SUM( supplier_catalogs.price * purchase_order_items.quantity ) AS total_amount
+	IFNULL( SUM( supplier_catalogs.price * purchase_order_items.quantity ) , 0 ) AS total_amount
 FROM
 	purchase_orders
 	LEFT JOIN purchase_order_items ON purchase_orders.purchase_order_id = purchase_order_items.purchase_order_id
-	LEFT JOIN supplier_catalogs ON purchase_order_items.supplier_catalog_id = purchase_order_items.supplier_catalog_id
+	LEFT JOIN supplier_catalogs ON supplier_catalogs.supplier_catalog_id = purchase_order_items.supplier_catalog_id
 WHERE
     purchase_orders.purchase_order_id = :purchase_order_id
 GROUP BY

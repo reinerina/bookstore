@@ -2,12 +2,13 @@ use actix_web::{get, web, App, HttpResponse, HttpServer};
 use bookstore::controller::{
     admin_book_add, admin_book_detail, admin_book_update, admin_customer_balance,
     admin_customer_credit, admin_customer_list, admin_detail, admin_location_list, admin_login,
-    admin_order_list, admin_order_ship_auto, admin_register, admin_stock_change,
-    admin_stock_transfer, author_list, book_authors_search, book_detail, book_keywords_search,
-    book_list, book_title_search, credit_rule, keyword_list, login, order_create, order_detail,
-    order_history, publisher_list, purchase_order_detail, purchase_order_list, register,
-    series_list, supplier_list, supplier_profile, user_detail, user_logout, user_profile,
-    user_update,
+    admin_order_list, admin_order_ship_auto, admin_register, admin_shortage_detail,
+    admin_shortage_list, admin_stock_change, admin_stock_transfer, admin_user_search, author_list,
+    book_authors_search, book_detail, book_keywords_search, book_list, book_title_search,
+    credit_rule, keyword_list, login, order_create, order_detail, order_history, order_payment,
+    publisher_list, purchase_order_create, purchase_order_detail, purchase_order_list, register,
+    series_list, shortage_create, supplier_list, supplier_profile, user_detail, user_logout,
+    user_profile, user_update,
 };
 use mysql_async::prelude::{Query, WithParams};
 use mysql_async::{OptsBuilder, Pool};
@@ -76,6 +77,9 @@ async fn main() -> std::io::Result<()> {
             .service(admin_customer_balance)
             .service(admin_order_list)
             .service(admin_order_ship_auto)
+            .service(admin_shortage_list)
+            .service(admin_shortage_detail)
+            .service(admin_user_search)
             .service(register)
             .service(login)
             .service(user_detail)
@@ -97,8 +101,11 @@ async fn main() -> std::io::Result<()> {
             .service(order_detail)
             .service(order_history)
             .service(order_create)
+            .service(order_payment)
             .service(purchase_order_list)
             .service(purchase_order_detail)
+            .service(purchase_order_create)
+            .service(shortage_create)
     });
     server.bind(("127.0.0.1", 8080))?.run().await?;
 

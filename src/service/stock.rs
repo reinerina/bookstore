@@ -28,7 +28,7 @@ impl StockService {
     ) -> anyhow::Result<()> {
         match AdminService::verify_admin(conn, token, AdminRole::Staff).await? {
             (_, _, true) => {
-                if quantity > 0 {
+                if quantity >= 0 {
                     StockRepo::in_stock(conn, book_id, location_id, quantity as u32).await
                 } else {
                     StockRepo::out_stock(conn, book_id, location_id, (-quantity) as u32).await

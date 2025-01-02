@@ -187,3 +187,48 @@ pub async fn order_detail(
         Err(e) => HttpResponse::BadGateway().json(e.to_string()),
     }
 }
+
+#[derive(Debug, Deserialize)]
+struct OrderPaymentRequest {
+    token: String,
+    tag: String,
+    nonce: String,
+    status: String,
+}
+
+#[derive(Debug, Serialize)]
+struct OrderPaymentResponse {
+    message: String,
+}
+
+#[post("/order/{id}/payment")]
+pub async fn order_payment(
+    pool: web::Data<Pool>,
+    order_payment_request: web::Json<OrderPaymentRequest>,
+    id: web::Path<(u32,)>,
+) -> impl Responder {
+    let request = order_payment_request.into_inner();
+    let token = &Token {
+        token: request.token,
+        tag: request.tag,
+        nonce: request.nonce,
+    };
+    match pool.get_conn().await {
+        Ok(mut conn) => {
+            match OrderService::update_order_payment_status(
+                &mut conn,
+                token,
+                id.into_inner().0,
+                request.status.parse().unwrap(),
+            )
+            .await
+            {
+                Ok(_) => HttpResponse::Ok().json(OrderPaymentResponse {
+                    message: "payment status updated".to_string(),
+                }),
+                Err(e) => HttpResponse::BadRequest().json(e.to_string()),
+            }
+        }
+        Err(e) => HttpResponse::BadGateway().json(e.to_string()),
+    }
+}

@@ -331,4 +331,106 @@ impl UserRepo {
         query.with(params).run(&mut *conn).await?;
         Ok(())
     }
+
+    pub async fn search_user_by_name_natural(
+        conn: &mut Conn,
+        name: &str,
+    ) -> anyhow::Result<Vec<Customer>> {
+        let query = r"SELECT customer_id,username,pwd,name,address,email,
+        account_balance,credit_level,
+        total_purchase,overdraft_limit,status
+        FROM customers WHERE MATCH(name) AGAINST(:name IN NATURAL LANGUAGE MODE)
+        ORDER BY MATCH(name) AGAINST(:name IN NATURAL LANGUAGE MODE) DESC;";
+        let params = params! {
+            "name" => name,
+        };
+        let result = query
+            .with(params)
+            .map(
+                conn,
+                |(
+                    customer_id,
+                    username,
+                    pwd,
+                    name,
+                    address,
+                    email,
+                    account_balance,
+                    credit_level,
+                    total_purchase,
+                    overdraft_limit,
+                    status,
+                )| {
+                    Customer {
+                        id: customer_id,
+                        username,
+                        password: pwd,
+                        name,
+                        address,
+                        email,
+                        account_balance,
+                        credit_level,
+                        total_purchase,
+                        overdraft_limit,
+                        status: {
+                            let status: String = status;
+                            status.parse().unwrap()
+                        },
+                    }
+                },
+            )
+            .await?;
+        Ok(result)
+    }
+
+    pub async fn search_user_by_username_natural(
+        conn: &mut Conn,
+        username: &str,
+    ) -> anyhow::Result<Vec<Customer>> {
+        let query = r"SELECT customer_id,username,pwd,name,address,email,
+        account_balance,credit_level,
+        total_purchase,overdraft_limit,status
+        FROM customers WHERE MATCH(username) AGAINST(:username IN NATURAL LANGUAGE MODE)
+        ORDER BY MATCH(username) AGAINST(:username IN NATURAL LANGUAGE MODE) DESC;";
+        let params = params! {
+            "username" => username,
+        };
+        let result = query
+            .with(params)
+            .map(
+                conn,
+                |(
+                    customer_id,
+                    username,
+                    pwd,
+                    name,
+                    address,
+                    email,
+                    account_balance,
+                    credit_level,
+                    total_purchase,
+                    overdraft_limit,
+                    status,
+                )| {
+                    Customer {
+                        id: customer_id,
+                        username,
+                        password: pwd,
+                        name,
+                        address,
+                        email,
+                        account_balance,
+                        credit_level,
+                        total_purchase,
+                        overdraft_limit,
+                        status: {
+                            let status: String = status;
+                            status.parse().unwrap()
+                        },
+                    }
+                },
+            )
+            .await?;
+        Ok(result)
+    }
 }

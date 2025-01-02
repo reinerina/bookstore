@@ -3,7 +3,7 @@ use mysql_common::time::PrimitiveDateTime;
 pub struct Shortage {
     pub id: u32,
     pub registration_date: PrimitiveDateTime,
-    pub item: Vec<ShortageItem>,
+    pub items: Vec<ShortageItem>,
     pub is_resolved: bool,
 }
 
@@ -12,7 +12,7 @@ impl Default for Shortage {
         Self {
             id: 0,
             registration_date: PrimitiveDateTime::MIN,
-            item: Vec::new(),
+            items: Vec::new(),
             is_resolved: false,
         }
     }
